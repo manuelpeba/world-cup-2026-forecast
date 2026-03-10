@@ -10,3 +10,4 @@ plotly
 streamlit
 tqdm
 python-dotenv
+pyyaml
