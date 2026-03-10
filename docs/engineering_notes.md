@@ -197,10 +197,137 @@ Future versions may include:
 - confederation-level metadata
 - FIFA membership metadata
 
-# Dataset filtering reduced matches from 98k to 63k rows.
+## Dataset filtering reduced matches from 98k to 63k rows.
 
 Final dataset properties:
 - ~31k real matches
 - 185 national teams
 - time range: 1950–present
 - tournaments: 26 relevant international competitions
+
+---
+
+# 10. Team Strength Model — Elo Rating System
+
+A dynamic Elo rating model was implemented to estimate the evolving strength of national teams over time.
+
+Script:
+
+`src/models/team_strength/elo_model.py`
+
+Input dataset:
+
+`data/processed/matches_filtered.parquet`
+
+Output dataset:
+
+`data/processed/team_elo_ratings.parquet`
+
+
+---
+
+## Model Design
+
+The Elo system estimates team strength using historical match results and updates ratings sequentially in chronological order.
+
+Each national team starts with a base rating of: 5.000
+
+Ratings are updated after every match using the standard Elo update formula:
+
+    R_new = R_old + K × G × (S − E)
+
+
+Where:
+
+| Variable | Meaning |
+|--------|--------|
+| K | Tournament importance factor |
+| G | Goal difference multiplier |
+| S | Actual match result |
+| E | Expected match result |
+
+---
+
+## Expected Result
+
+The expected result is computed as:
+
+    E = 1 / (1 + 10^((R_opponent − R_team) / 400))
+
+
+---
+
+## Tournament Weighting (K-factor)
+
+Different competitions have different importance levels:
+
+| Competition Type | K |
+|------------------|--|
+| Friendly | 20 |
+| Qualification matches | 30 |
+| Regional competitions / Nations League | 35 |
+| Continental tournaments | 40 |
+| FIFA World Cup | 50 |
+
+This ensures that high-stakes matches impact ratings more strongly.
+
+---
+
+## Goal Difference Adjustment
+
+To reflect the information contained in large victories:
+
+| Goal Difference | Multiplier |
+|-----------------|-----------|
+| 1 goal | 1.0 |
+| 2 goals | 1.5 |
+| 3+ goals | 1.75 |
+
+---
+
+## Home Advantage
+
+If the match is not played at a neutral venue, the home team receives an Elo adjustment: +80 Elo
+
+
+before computing expected results.
+
+---
+
+## Output Features
+
+The resulting dataset contains the following key variables:
+
+| Feature | Description |
+|-------|-------------|
+| elo_before | Team rating before the match |
+| elo_after | Team rating after the match |
+| opponent_elo_before | Opponent rating before match |
+| elo_diff_before | Rating difference between teams |
+| expected_result | Predicted probability of winning |
+| actual_result | Actual match outcome |
+
+This dataset forms the **team strength layer** of the project and will be used to construct match prediction features.
+
+---
+
+## Dataset Summary
+
+Current Elo dataset:
+
+- ~63k team-level observations
+- ~31k real matches
+- 185 national teams
+- Time span: **1950 → present**
+
+---
+
+## Role in the Modeling Framework
+
+The Elo model corresponds to **Layer 2** of the project architecture:
+
+Layer 1 — Player Impact Model
+Layer 2 — Team Strength Model (Elo)
+Layer 3 — Match Outcome ML Model
+
+The Elo ratings will be combined with rolling team performance features to build the final match prediction dataset.
