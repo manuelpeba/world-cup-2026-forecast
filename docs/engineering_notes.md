@@ -140,3 +140,59 @@ This document will expand with:
 - Simulation reproducibility
 
 - Experiment tracking
+
+---
+
+# 9. Dataset Filtering Strategy (v2)
+
+During exploratory analysis of the `team_match_features` dataset, the following issue was identified:
+
+Even after removing many non-FIFA teams through an explicit exclusion list, several regional or non-eligible teams still remained in the dataset (e.g., Brittany).
+
+This revealed that the blacklist approach was not sufficiently robust.
+
+## Decision
+
+The filtering strategy will move from a **blacklist model** to an **allowlist model**.
+
+Instead of excluding specific teams, the pipeline will explicitly keep only teams that belong to a curated list of valid national teams.
+
+This list will be stored in:
+
+`configs/allowed_teams.yaml`
+
+
+## Benefits
+
+This approach:
+
+- prevents regional or CONIFA teams from entering the dataset
+- makes the filtering logic explicit and auditable
+- improves reproducibility
+- simplifies future maintenance
+
+## Pipeline Update
+
+The filtering pipeline will now follow this order:
+
+team_match_features
+↓
+filter by year
+↓
+filter by tournament
+↓
+filter by allowed national teams
+↓
+drop rows without rolling history
+↓
+matches_filtered
+
+
+## Future Improvements
+
+Future versions may include:
+
+- team name normalization (aliases)
+- historical team mappings (e.g., Yugoslavia → Serbia/Croatia etc.)
+- confederation-level metadata
+- FIFA membership metadata
