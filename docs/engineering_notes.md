@@ -196,3 +196,11 @@ Future versions may include:
 - historical team mappings (e.g., Yugoslavia → Serbia/Croatia etc.)
 - confederation-level metadata
 - FIFA membership metadata
+
+# Dataset filtering reduced matches from 98k to 63k rows.
+
+Final dataset properties:
+- ~31k real matches
+- 185 national teams
+- time range: 1950–present
+- tournaments: 26 relevant international competitions
