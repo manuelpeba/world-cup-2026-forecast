@@ -331,3 +331,105 @@ Layer 2 — Team Strength Model (Elo)
 Layer 3 — Match Outcome ML Model
 
 The Elo ratings will be combined with rolling team performance features to build the final match prediction dataset.
+
+---
+
+# 11. Match Feature Engineering
+
+Script:
+src/features/match_features.py
+
+Input datasets:
+
+data/processed/matches_filtered.parquet
+data/processed/team_elo_ratings.parquet
+
+Output dataset:
+
+data/processed/match_model_dataset.parquet
+
+---
+
+## Purpose
+
+This stage transforms the team-level dataset into a **match-level modeling dataset** suitable for machine learning models.
+
+Each match becomes **one row**, combining both team perspectives.
+
+---
+
+## Feature Categories
+
+### Team Strength
+
+Derived from the Elo model.
+
+Features include:
+
+- team_a_elo_before
+- team_b_elo_before
+- elo_diff
+
+---
+
+### Recent Team Form
+
+Rolling performance features computed over recent matches:
+
+- rolling_goals_scored
+- rolling_goals_conceded
+- rolling_goal_diff
+- rolling_win_rate
+- rolling_points
+
+Differential features are computed between both teams.
+
+---
+
+### Contextual Match Variables
+
+Additional contextual information:
+
+- tournament
+- neutral_venue
+- tournament importance (k_factor)
+
+---
+
+## Target Variable
+
+The model predicts the match outcome from the perspective of **team A**.
+
+Target classes:
+
+win
+draw
+loss
+
+Distribution in dataset:
+
+win  ≈ 48%
+loss ≈ 27%
+draw ≈ 24%
+
+---
+
+## Dataset Characteristics
+
+Matches: ~31k  
+Teams: 185  
+Period: 1950 → present
+
+No missing values detected after feature engineering.
+
+---
+
+## Role in Modeling Architecture
+
+This dataset feeds the final layer:
+
+Layer 1 — Player Impact Model (future)
+Layer 2 — Team Strength Model (Elo)
+Layer 3 — Match Outcome ML Model
+
+The Match Outcome Model will be trained on this dataset.
