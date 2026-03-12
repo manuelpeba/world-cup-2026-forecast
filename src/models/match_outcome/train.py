@@ -46,8 +46,6 @@ NUMERIC_FEATURES = [
     "rolling_goals_conceded_diff",
     "team_a_expected_result",
     "team_b_expected_result",
-    "match_k_factor",
-    "match_goal_diff_multiplier",
 ]
 
 CATEGORICAL_FEATURES = [
@@ -148,7 +146,7 @@ def build_models(preprocessor: ColumnTransformer) -> Dict[str, Pipeline]:
                 LogisticRegression(
                     max_iter=2000,
                     solver="lbfgs",
-                    class_weight="balanced",
+                    class_weight=None,
                     random_state=42,
                 ),
             ),

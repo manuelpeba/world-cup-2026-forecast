@@ -1,0 +1,12 @@
+{
+  "tournament_name": "FIFA World Cup 2026 - Simplified",
+  "tournament_id": "world_cup_2026_simplified",
+  "model_name": "logistic_regression",
+  "neutral_venue": 1,
+  "knockout_draw_resolution": "elo_weighted",
+  "num_groups": 8,
+  "group_size": 4,
+  "teams_advancing_per_group": 2,
+  "num_simulations": 10000,
+  "num_teams": 32
+}

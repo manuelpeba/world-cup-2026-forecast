@@ -1,0 +1,10 @@
+{
+  "A": ["Spain", "Brazil", "Japan", "Mexico"],
+  "B": ["France", "Argentina", "United States", "Morocco"],
+  "C": ["England", "Croatia", "Denmark", "Serbia"],
+  "D": ["Portugal", "Uruguay", "South Korea", "Canada"],
+  "E": ["Germany", "Switzerland", "Poland", "Turkey"],
+  "F": ["Netherlands", "Senegal", "Iran", "Australia"],
+  "G": ["Belgium", "Colombia", "Ecuador", "Nigeria"],
+  "H": ["Italy", "Cameroon", "Peru", "Chile"]
+}
