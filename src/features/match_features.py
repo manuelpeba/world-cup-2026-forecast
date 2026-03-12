@@ -241,7 +241,11 @@ def create_model_features(df: pd.DataFrame) -> pd.DataFrame:
     """Create differential features and classification target."""
     df = df.copy()
 
+    df["neutral_venue"] = df["neutral_venue"].astype(int)
+
     df["elo_diff"] = df["team_a_elo_before"] - df["team_b_elo_before"]
+    df["abs_elo_diff"] = df["elo_diff"].abs()
+
     df["rolling_goal_diff_diff"] = (
         df["team_a_rolling_goal_diff"] - df["team_b_rolling_goal_diff"]
     )
@@ -280,8 +284,43 @@ def run_quality_checks(df: pd.DataFrame) -> None:
     print(f"Rows: {len(df):,}")
     print(f"Unique teams (team_a): {df['team_a'].nunique():,}")
     print(f"Date range: {df['date'].min().date()} -> {df['date'].max().date()}")
+
     print("\nTarget distribution:")
     print(df["target"].value_counts(normalize=True).round(4))
+
+    print("\nneutral_venue distribution:")
+    print(df["neutral_venue"].value_counts(dropna=False))
+
+    print("\nDerived feature nulls:")
+    print(
+        df[
+            [
+                "elo_diff",
+                "abs_elo_diff",
+                "rolling_goal_diff_diff",
+                "rolling_points_diff",
+                "rolling_win_rate_diff",
+                "rolling_goals_scored_diff",
+                "rolling_goals_conceded_diff",
+            ]
+        ].isna().sum()
+    )
+
+    print("\nDerived feature sample:")
+    print(
+        df[
+            [
+                "team_a",
+                "team_b",
+                "team_a_elo_before",
+                "team_b_elo_before",
+                "elo_diff",
+                "abs_elo_diff",
+                "neutral_venue",
+                "target",
+            ]
+        ].head()
+    )
 
     missing = df.isna().sum()
     missing = missing[missing > 0]

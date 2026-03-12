@@ -433,3 +433,79 @@ Layer 2 — Team Strength Model (Elo)
 Layer 3 — Match Outcome ML Model
 
 The Match Outcome Model will be trained on this dataset.
+
+## Model match outcome - train
+
+scikit-learn >=1.5 removed LogisticRegression multi_class parameter
+models should rely on solver-based automatic multinomial detection
+
+## Match Outcome Model Improvements
+
+Date: YYYY-MM-DD
+
+Changes introduced in the modeling pipeline:
+
+### New Feature Engineering
+
+Two new features were introduced in the match modeling dataset:
+
+- `abs_elo_diff`
+- `neutral_venue`
+
+#### abs_elo_diff
+
+Absolute difference between the pre-match Elo ratings of the two teams.
+
+Motivation:
+- Captures match balance
+- Helps model draw probability
+
+`abs_elo_diff = abs(team_a_elo_before - team_b_elo_before)`
+
+
+#### neutral_venue
+
+Binary feature indicating whether the match was played at a neutral venue.
+
+Motivation:
+- International tournaments are often played at neutral sites
+- Important contextual variable for match outcome modeling
+
+Values:
+
+0 = non-neutral venue
+1 = neutral venue
+
+
+### Training Pipeline Updates
+
+The training pipeline was updated to:
+
+- include `abs_elo_diff` in numeric features
+- maintain `neutral_venue` as categorical feature
+- export model metadata for downstream inference
+
+Metadata files saved per model:
+
+`artifacts/models/{model_name}_metadata.json`
+
+
+Metadata includes:
+
+- feature_columns
+- numeric_features
+- categorical_features
+- class_labels
+
+This enables robust model loading during prediction and simulation stages.
+
+### Model Performance
+
+After introducing the new features:
+
+| Model | Accuracy | Log Loss | Brier |
+|------|------|------|------|
+| Logistic Regression | ~0.608 | ~0.765 | ~0.464 |
+| Random Forest | ~0.614 | ~0.767 | ~0.457 |
+
+Performance remained stable while improving model specification.
