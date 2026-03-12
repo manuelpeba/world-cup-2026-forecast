@@ -1,3 +1,4 @@
+# Byte-compiled / optimized / DLL files
 .venv/
 __pycache__/
 *.pyc
@@ -7,6 +8,12 @@ data/raw/*
 data/interim/*
 data/processed/*
 
-artifacts/models/*
+# Environment variables and Jupyter notebook checkpoints
 .env
 .ipynb_checkpoints
+
+# ML artifacts
+artifacts/
+artifacts/models/*
+artifacts/metrics/*
+artifacts/predictions/*
