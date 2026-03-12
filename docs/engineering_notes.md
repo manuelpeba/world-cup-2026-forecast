@@ -441,7 +441,7 @@ models should rely on solver-based automatic multinomial detection
 
 ## Match Outcome Model Improvements
 
-Date: YYYY-MM-DD
+Date: 12/03/2026
 
 Changes introduced in the modeling pipeline:
 
@@ -509,3 +509,106 @@ After introducing the new features:
 | Random Forest | ~0.614 | ~0.767 | ~0.457 |
 
 Performance remained stable while improving model specification.
+
+## Model Training Architecture Update
+
+A model specification strategy was introduced to support multiple feature configurations during training.
+
+The training pipeline now supports two different model specifications:
+
+full_model
+prematch_model
+
+
+### Purpose
+
+The goal is to separate:
+
+1. models optimized for historical predictive performance
+2. models designed for forward simulation of future matches
+
+This avoids repeatedly modifying feature lists during experimentation.
+
+---
+
+### Training Pipeline Design
+
+The training script now supports different feature sets.
+
+`src/models/match_outcome/train.py`
+
+Each model specification defines its own feature list.
+
+Example:
+
+`NUMERIC_FEATURES_FULL`
+`NUMERIC_FEATURES_PREMATCH`
+
+
+Both specifications are trained independently.
+
+Artifacts are saved separately:
+
+`artifacts/models/`
+`logistic_regression_full.joblib`
+`logistic_regression_prematch.joblib`
+
+Metadata files are also generated:
+
+`logistic_regression_full_metadata.json`
+`logistic_regression_prematch_metadata.json`
+
+
+This allows the prediction module to load the correct feature configuration automatically.
+
+---
+
+### Predictor Compatibility
+
+The inference module:
+
+`src/models/match_outcome/predict.py`
+
+
+uses the metadata file associated with each model.
+
+The metadata defines:
+
+- numeric features
+- categorical features
+- class labels
+- feature column order
+
+This ensures that prediction remains robust even when model specifications evolve.
+
+---
+
+### Evaluation Strategy
+
+Model validation scripts can now evaluate both specifications.
+
+Example workflow:
+
+    train models
+    ↓
+    validate predictor
+    ↓
+    compare specifications
+
+Results are saved to:
+
+`artifacts/metrics/`
+
+This supports reproducible experimentation and easier comparison of modeling approaches.
+
+---
+
+### Benefits
+
+This architecture provides:
+
+- reproducible experiments
+- safe iteration on feature sets
+- clearer separation between modeling and simulation requirements
+- easier debugging of inference pipelines
+
