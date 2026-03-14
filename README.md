@@ -67,7 +67,7 @@ B --> C[Feature Engineering]
 C --> D[Team Strength Features]
 D --> E[Match Outcome Model]
 
-E --> F[predict_match(team_a, team_b)]
+E --> F[Match Prediction API]
 
 F --> G[Monte Carlo Tournament Simulation]
 
@@ -91,6 +91,40 @@ O --> P[Streamlit Dashboard]
 
 The architecture follows a production-style separation between data processing,
 predictive modeling, simulation, and reporting layers.
+
+## Tournament Simulation Flow
+
+```mermaid
+flowchart TD
+
+A[Load Team Strength Snapshot] --> B[Initialize Tournament]
+
+B --> C[Simulate Group Matches]
+
+C --> D[Generate Group Tables]
+
+D --> E[Select Qualified Teams]
+
+E --> F[Simulate Knockout Bracket]
+
+F --> G[Quarterfinalists]
+
+G --> H[Semifinalists]
+
+H --> I[Finalists]
+
+I --> J[Champion]
+
+J --> K[Store Simulation Result]
+
+K --> L{More Simulations?}
+
+L -->|Yes| B
+L -->|No| M[Aggregate Tournament Statistics]
+
+M --> N[Team Advancement Probabilities]
+M --> O[Champion Probability Distribution]
+```
 
 ## Component Responsabilities
 
@@ -312,7 +346,9 @@ world-cup-2026-forecast
 
 Run tournament simulations from the command line:
 
+```bash
 py -m src.simulation.run_simulation --groups-path configs/world_cup_groups.json --num-simulations 10000
+```
 
 Example output:
 
@@ -343,7 +379,7 @@ A Streamlit dashboard allows interactive exploration of forecast results.
 
 Run:
 
-streamlit run app/streamlit_app.py
+`streamlit run app/streamlit_app.py`
 
 The dashboard provides:
 
