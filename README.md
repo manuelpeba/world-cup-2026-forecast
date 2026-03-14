@@ -346,6 +346,8 @@ world-cup-2026-forecast
 
 Run tournament simulations from the command line:
 
+## Classic Tournement
+
 ```bash
 py -m src.simulation.run_simulation --groups-path configs/world_cup_groups.json --num-simulations 10000
 ```
@@ -370,6 +372,47 @@ Example outputs:
 - champion_distribution.csv  
 - match_logs.parquet  
 - summary_metadata.json  
+
+## New Tournement (2026)
+
+The full tournament simulation can be executed from the command line using the simulation pipeline.
+
+Example:
+
+```bash
+py -m src.simulation.run_simulation \
+  --groups-path configs/world_cup_groups_48.json \
+  --bracket-config-path configs/world_cup_2026_bracket.json \
+  --num-simulations 10000 \
+  --simulation-format v2
+```
+
+**Parameters**
+
+| Parameter               | Description                                                      |
+| ----------------------- | ---------------------------------------------------------------- |
+| `--groups-path`         | JSON configuration defining the World Cup group stage            |
+| `--bracket-config-path` | Knockout bracket configuration for the tournament format         |
+| `--num-simulations`     | Number of Monte Carlo tournament simulations                     |
+| `--simulation-format`   | Tournament format version (`v1` for 32 teams, `v2` for 48 teams) |
+
+**Outputs**
+
+After execution, the pipeline exports simulation artifacts to: 
+
+`data/outputs/simulation/`
+
+Generated files include:
+
+- `team_probabilities.csv`
+
+- `champion_distribution.csv`
+
+- `match_logs.parquet`
+
+- `summary_metadata.json`
+
+These artifacts are later consumed by the Streamlit dashboard for visualization.
 
 ---
 
