@@ -15,7 +15,10 @@ from src.simulation.aggregation import (
 from src.simulation.config import SimulationConfig, TournamentConfig
 from src.simulation.parallel import simulate_many_tournaments_parallel
 from src.simulation.reporting import export_simulation_outputs
-from src.simulation.tournament import simulate_many_tournaments
+from src.simulation.tournament import (
+    simulate_many_tournaments,
+    simulate_many_tournaments_v2,
+)
 
 
 def load_groups_from_json(input_path: Path) -> dict[str, list[str]]:
@@ -147,6 +150,44 @@ def load_group_match_schedule_from_json(
     return schedule
 
 
+def load_bracket_config_from_json(
+    input_path: Path | None,
+) -> dict[str, Any] | None:
+    """
+    Load optional bracket configuration JSON for v2 tournament formats.
+
+    Expected minimal structure:
+    {
+        "bracket": {
+            "fixed_slots": [
+                ["R32_1", "A1", "3X1"]
+            ],
+            "third_place_assignments": {
+                "A-C-D-F-H-I-J-L": {
+                    "3X1": "3A"
+                }
+            }
+        }
+    }
+    """
+    if input_path is None:
+        return None
+
+    if not input_path.exists():
+        raise FileNotFoundError(f"Bracket config file not found: {input_path}")
+
+    with open(input_path, "r", encoding="utf-8") as file:
+        payload = json.load(file)
+
+    if not isinstance(payload, dict):
+        raise ValueError("Bracket config JSON must be a dictionary.")
+
+    if "bracket" not in payload:
+        raise ValueError("Bracket config JSON must contain top-level key 'bracket'.")
+
+    return payload
+
+
 def validate_group_team_names(
     groups: dict[str, list[str]],
     simulation_config: SimulationConfig,
@@ -221,6 +262,8 @@ def print_run_summary(
     tournament_config: TournamentConfig,
     groups: dict[str, list[str]],
     num_workers: int,
+    simulation_format: str,
+    bracket_config_path: str | None = None,
 ) -> None:
     """
     Print simulation setup summary to console.
@@ -232,6 +275,7 @@ def print_run_summary(
     print("=" * 80)
     print(f"Tournament:              {tournament_config.tournament_name}")
     print(f"Tournament ID:           {tournament_config.tournament_id}")
+    print(f"Simulation format:       {simulation_format}")
     print(f"Model:                   {simulation_config.model_name}")
     print(f"Simulations:             {simulation_config.num_simulations:,}")
     print(f"Random seed:             {simulation_config.random_seed}")
@@ -240,6 +284,8 @@ def print_run_summary(
     print(f"Workers:                 {num_workers}")
     print(f"Groups:                  {len(groups)}")
     print(f"Teams:                   {total_teams}")
+    if bracket_config_path is not None:
+        print(f"Bracket config:          {bracket_config_path}")
     print(f"Output dir:              {simulation_config.output_dir}")
     print("=" * 80)
 
@@ -258,6 +304,7 @@ def print_top_probability_table(
         col for col in [
             "team",
             "advance_from_group_prob",
+            "round_of_16_prob",
             "quarterfinal_prob",
             "semifinal_prob",
             "final_prob",
@@ -277,6 +324,8 @@ def run_simulation_pipeline(
     tournament_config: TournamentConfig,
     group_match_schedule: dict[str, list[tuple[str, str]]] | None = None,
     round_of_16_mapping: list[tuple[str, str, str]] | None = None,
+    bracket_config: dict[str, Any] | None = None,
+    simulation_format: str = "v1",
     export_stage_presence: bool = False,
     export_stage_counts: bool = False,
     decimals: int = 4,
@@ -289,23 +338,46 @@ def run_simulation_pipeline(
         3. export artifacts
         4. return useful objects for downstream use
     """
-    if num_workers > 1:
-        simulation_results = simulate_many_tournaments_parallel(
+    if simulation_format not in {"v1", "v2"}:
+        raise ValueError("simulation_format must be one of {'v1', 'v2'}.")
+
+    if simulation_format == "v2":
+        if bracket_config is None:
+            raise ValueError(
+                "V2 simulation requires bracket_config. "
+                "Provide --bracket-config-path."
+            )
+        if num_workers > 1:
+            raise NotImplementedError(
+                "Parallel execution for V2 is not wired yet. "
+                "Run with --num-workers 1 for now."
+            )
+
+        simulation_results = simulate_many_tournaments_v2(
             groups=groups,
             simulation_config=simulation_config,
             tournament_config=tournament_config,
+            bracket_config=bracket_config,
             group_match_schedule=group_match_schedule,
-            round_of_16_mapping=round_of_16_mapping,
-            num_workers=num_workers,
         )
     else:
-        simulation_results = simulate_many_tournaments(
-            groups=groups,
-            simulation_config=simulation_config,
-            tournament_config=tournament_config,
-            group_match_schedule=group_match_schedule,
-            round_of_16_mapping=round_of_16_mapping,
-        )
+        if num_workers > 1:
+            simulation_results = simulate_many_tournaments_parallel(
+                groups=groups,
+                simulation_config=simulation_config,
+                tournament_config=tournament_config,
+                group_match_schedule=group_match_schedule,
+                round_of_16_mapping=round_of_16_mapping,
+                num_workers=num_workers,
+            )
+        else:
+            simulation_results = simulate_many_tournaments(
+                groups=groups,
+                simulation_config=simulation_config,
+                tournament_config=tournament_config,
+                group_match_schedule=group_match_schedule,
+                round_of_16_mapping=round_of_16_mapping,
+            )
 
     aggregated_outputs = aggregate_simulation_results(
         simulation_results=simulation_results,
@@ -351,7 +423,20 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--round-of-16-mapping-path",
         type=str,
         default=None,
-        help="Optional path to JSON file with custom round-of-16 mapping.",
+        help="Optional path to JSON file with custom round-of-16 mapping (v1 only).",
+    )
+    parser.add_argument(
+        "--bracket-config-path",
+        type=str,
+        default=None,
+        help="Optional path to JSON file with bracket rules (required for v2).",
+    )
+    parser.add_argument(
+        "--simulation-format",
+        type=str,
+        default="v1",
+        choices=["v1", "v2"],
+        help="Tournament simulation format. Use 'v2' for the 48-team workflow.",
     )
 
     parser.add_argument(
@@ -425,7 +510,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "--teams-advancing-per-group",
         type=int,
         default=2,
-        help="Number of teams advancing from each group.",
+        help="Number of teams advancing automatically from each group.",
     )
     parser.add_argument(
         "--points-win",
@@ -498,6 +583,11 @@ def main() -> None:
     if args.num_workers < 1:
         raise ValueError("--num-workers must be >= 1")
 
+    if args.simulation_format == "v2" and args.bracket_config_path is None:
+        raise ValueError(
+            "--bracket-config-path is required when --simulation-format v2."
+        )
+
     groups = load_groups_from_json(Path(args.groups_path))
     group_match_schedule = load_group_match_schedule_from_json(
         Path(args.group_match_schedule_path)
@@ -507,6 +597,11 @@ def main() -> None:
     round_of_16_mapping = load_round_of_16_mapping_from_json(
         Path(args.round_of_16_mapping_path)
         if args.round_of_16_mapping_path is not None
+        else None
+    )
+    bracket_config = load_bracket_config_from_json(
+        Path(args.bracket_config_path)
+        if args.bracket_config_path is not None
         else None
     )
 
@@ -524,6 +619,8 @@ def main() -> None:
         tournament_config=tournament_config,
         groups=groups,
         num_workers=args.num_workers,
+        simulation_format=args.simulation_format,
+        bracket_config_path=args.bracket_config_path,
     )
 
     outputs = run_simulation_pipeline(
@@ -532,6 +629,8 @@ def main() -> None:
         tournament_config=tournament_config,
         group_match_schedule=group_match_schedule,
         round_of_16_mapping=round_of_16_mapping,
+        bracket_config=bracket_config,
+        simulation_format=args.simulation_format,
         export_stage_presence=args.export_stage_presence,
         export_stage_counts=args.export_stage_counts,
         decimals=args.round_decimals,

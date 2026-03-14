@@ -236,85 +236,40 @@ def simulate_knockout_stage(
     round_of_16_mapping: list[tuple[str, str, str]] | None = None,
 ) -> dict[str, Any]:
     """
-    Simulate the full knockout stage from Round of 16 to Final.
-
-    Correct stage semantics:
-        - qualified_teams: group-stage qualifiers (handled outside this module)
-        - quarterfinalists: winners of Round of 16
-        - semifinalists: winners of Quarterfinals
-        - finalists: winners of Semifinals
-        - champion: winner of Final
+    Legacy wrapper for the v1 32-team format.
     """
     round_of_16_matches = build_round_of_16_bracket(
         group_qualified_map=group_qualified_map,
         knockout_mapping=round_of_16_mapping,
     )
 
-    round_of_16_results, quarterfinalists = simulate_knockout_round(
-        matches=round_of_16_matches,
+    output = simulate_knockout_from_initial_matches(
+        initial_matches=round_of_16_matches,
         predictor=predictor,
         simulation_config=simulation_config,
         rng=rng,
+        rounds=[
+            "round_of_16",
+            "quarterfinals",
+            "semifinals",
+            "final",
+        ],
     )
 
-    quarterfinal_matches = build_next_round_matches(
-        previous_round_results=round_of_16_results,
-        next_stage="quarterfinals",
-    )
-    quarterfinal_results, semifinalists = simulate_knockout_round(
-        matches=quarterfinal_matches,
-        predictor=predictor,
-        simulation_config=simulation_config,
-        rng=rng,
-    )
-
-    semifinal_matches = build_next_round_matches(
-        previous_round_results=quarterfinal_results,
-        next_stage="semifinals",
-    )
-    semifinal_results, finalists = simulate_knockout_round(
-        matches=semifinal_matches,
-        predictor=predictor,
-        simulation_config=simulation_config,
-        rng=rng,
-    )
-
-    final_matches = build_next_round_matches(
-        previous_round_results=semifinal_results,
-        next_stage="final",
-    )
-    final_results, final_winners = simulate_knockout_round(
-        matches=final_matches,
-        predictor=predictor,
-        simulation_config=simulation_config,
-        rng=rng,
-    )
-
-    if len(final_winners) != 1:
-        raise ValueError(
-            f"Final round must produce exactly one champion, got {len(final_winners)}."
-        )
-
-    champion = final_winners[0]
-
-    all_knockout_results: list[MatchSimulationResult] = (
-        round_of_16_results
-        + quarterfinal_results
-        + semifinal_results
-        + final_results
-    )
+    teams_by_round = output["teams_by_round"]
 
     return {
-        "quarterfinalists": quarterfinalists,
-        "semifinalists": semifinalists,
-        "finalists": finalists,
-        "champion": champion,
-        "round_of_16_results": round_of_16_results,
-        "quarterfinal_results": quarterfinal_results,
-        "semifinal_results": semifinal_results,
-        "final_results": final_results,
-        "all_knockout_results": all_knockout_results,
+        "quarterfinalists": teams_by_round.get("quarterfinals", []),
+        "semifinalists": teams_by_round.get("semifinals", []),
+        "finalists": teams_by_round.get("final", []),
+        "champion": output["champion"],
+        "round_of_16_results": output["results_by_round"].get("round_of_16", []),
+        "quarterfinal_results": output["results_by_round"].get("quarterfinals", []),
+        "semifinal_results": output["results_by_round"].get("semifinals", []),
+        "final_results": output["results_by_round"].get("final", []),
+        "all_knockout_results": output["all_knockout_results"],
     }
+
 
 
 def flatten_knockout_results(
@@ -353,3 +308,73 @@ def knockout_results_to_records(
         )
 
     return records
+
+def simulate_knockout_from_initial_matches(
+    initial_matches: list[KnockoutMatch],
+    predictor: SimulationPredictor,
+    simulation_config: SimulationConfig,
+    rng: np.random.Generator,
+    rounds: list[str] | None = None,
+) -> dict[str, Any]:
+    """
+    Simulate a knockout bracket starting from an arbitrary initial round.
+
+    Example rounds for World Cup 2026:
+        ["round_of_32", "round_of_16", "quarterfinals", "semifinals", "final"]
+    """
+    if not initial_matches:
+        raise ValueError("initial_matches cannot be empty.")
+
+    rounds = rounds or [
+        "round_of_16",
+        "quarterfinals",
+        "semifinals",
+        "final",
+    ]
+
+    initial_stage = initial_matches[0].stage
+    if initial_stage != rounds[0]:
+        raise ValueError(
+            f"Initial match stage '{initial_stage}' does not match first round "
+            f"'{rounds[0]}'."
+        )
+
+    knockout_results_by_round: dict[str, list[MatchSimulationResult]] = {}
+    teams_by_round: dict[str, list[str]] = {}
+
+    current_matches = initial_matches
+
+    for round_idx, round_name in enumerate(rounds):
+        round_results, winners = simulate_knockout_round(
+            matches=current_matches,
+            predictor=predictor,
+            simulation_config=simulation_config,
+            rng=rng,
+        )
+
+        knockout_results_by_round[round_name] = round_results
+
+        next_round_name = rounds[round_idx + 1] if round_idx + 1 < len(rounds) else None
+        if next_round_name is not None:
+            teams_by_round[next_round_name] = winners
+            current_matches = build_next_round_matches(
+                previous_round_results=round_results,
+                next_stage=next_round_name,
+            )
+        else:
+            if len(winners) != 1:
+                raise ValueError(
+                    f"Final round must produce exactly one champion, got {len(winners)}."
+                )
+            champion = winners[0]
+
+    all_knockout_results: list[MatchSimulationResult] = []
+    for round_name in rounds:
+        all_knockout_results.extend(knockout_results_by_round.get(round_name, []))
+
+    return {
+        "teams_by_round": teams_by_round,
+        "champion": champion,
+        "results_by_round": knockout_results_by_round,
+        "all_knockout_results": all_knockout_results,
+    }

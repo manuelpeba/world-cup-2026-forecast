@@ -77,9 +77,10 @@ class TournamentRunResult:
     group_tables: dict[str, list[GroupTableRow]]
     group_stage_results: list[MatchSimulationResult]
     qualified_teams: list[str]
-    quarterfinalists: list[str]
-    semifinalists: list[str]
-    finalists: list[str]
-    champion: str
-    match_results: list[MatchSimulationResult]
-    metadata: dict[str, Any]
+    round_of_16_teams: list[str] | None = None
+    quarterfinalists: list[str] | None = None
+    semifinalists: list[str] | None = None
+    finalists: list[str] | None = None
+    champion: str | None = None
+    match_results: list[MatchSimulationResult] | None = None
+    metadata: dict[str, Any] | None = None

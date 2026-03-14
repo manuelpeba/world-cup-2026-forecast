@@ -8,6 +8,17 @@ from src.simulation.structures import TournamentRunResult
 from src.simulation.tournament import extract_stage_presence_flags
 
 
+DEFAULT_STAGE_ORDER = [
+    "group_stage_exit",
+    "round_of_32",
+    "round_of_16",
+    "quarterfinal",
+    "semifinal",
+    "final",
+    "champion",
+]
+
+
 def validate_simulation_results(
     simulation_results: list[TournamentRunResult],
 ) -> None:
@@ -45,21 +56,46 @@ def extract_all_teams(
     return sorted(teams)
 
 
+def infer_available_stage_columns(
+    stage_presence_df: pd.DataFrame,
+) -> list[str]:
+    """
+    Infer which stage columns are available in a stage presence dataframe.
+
+    Supports both:
+        - v1: group_stage_exit, round_of_16, quarterfinal, semifinal, final, champion
+        - v2: group_stage_exit, round_of_32, round_of_16, quarterfinal, semifinal, final, champion
+    """
+    return [col for col in DEFAULT_STAGE_ORDER if col in stage_presence_df.columns]
+
+
 def build_stage_presence_dataframe(
     simulation_results: list[TournamentRunResult],
 ) -> pd.DataFrame:
     """
     Build a long-format dataframe with one row per team per simulation.
 
-    Output columns:
+    Output columns always include:
         - simulation_id
         - team
-        - group_stage_exit
-        - round_of_16
-        - quarterfinal
-        - semifinal
-        - final
-        - champion
+
+    Stage columns depend on tournament format:
+        v1:
+            - group_stage_exit
+            - round_of_16
+            - quarterfinal
+            - semifinal
+            - final
+            - champion
+
+        v2:
+            - group_stage_exit
+            - round_of_32
+            - round_of_16
+            - quarterfinal
+            - semifinal
+            - final
+            - champion
     """
     validate_simulation_results(simulation_results)
     all_teams = extract_all_teams(simulation_results)
@@ -79,22 +115,23 @@ def build_stage_presence_dataframe(
 
     df = pd.DataFrame(records)
 
-    expected_columns = {
-        "simulation_id",
-        "team",
-        "group_stage_exit",
-        "round_of_16",
-        "quarterfinal",
-        "semifinal",
-        "final",
-        "champion",
-    }
-
-    missing_columns = expected_columns - set(df.columns)
-    if missing_columns:
+    base_required_columns = {"simulation_id", "team", "group_stage_exit", "champion"}
+    missing_base_columns = base_required_columns - set(df.columns)
+    if missing_base_columns:
         raise ValueError(
-            f"Stage presence dataframe is missing required columns: {sorted(missing_columns)}"
+            "Stage presence dataframe is missing required base columns: "
+            f"{sorted(missing_base_columns)}"
         )
+
+    available_stage_columns = infer_available_stage_columns(df)
+
+    if "round_of_16" not in available_stage_columns:
+        raise ValueError(
+            "Stage presence dataframe must contain at least 'round_of_16'."
+        )
+
+    ordered_columns = ["simulation_id", "team"] + available_stage_columns
+    df = df.loc[:, ordered_columns]
 
     return df.sort_values(["team", "simulation_id"]).reset_index(drop=True)
 
@@ -108,34 +145,19 @@ def aggregate_stage_probabilities(
     Since stage flags are binary, their mean across simulations equals the
     estimated probability of reaching that stage.
     """
-    required_columns = {
-        "team",
-        "group_stage_exit",
-        "round_of_16",
-        "quarterfinal",
-        "semifinal",
-        "final",
-        "champion",
-    }
-
+    required_columns = {"team", "group_stage_exit", "champion"}
     missing_columns = required_columns - set(stage_presence_df.columns)
     if missing_columns:
         raise ValueError(
             f"stage_presence_df is missing required columns: {sorted(missing_columns)}"
         )
 
+    stage_columns = infer_available_stage_columns(stage_presence_df)
+    aggregation_columns = ["team"] + stage_columns
+
     probability_table = (
-        stage_presence_df
-        .groupby("team", as_index=False)[
-            [
-                "group_stage_exit",
-                "round_of_16",
-                "quarterfinal",
-                "semifinal",
-                "final",
-                "champion",
-            ]
-        ]
+        stage_presence_df.loc[:, aggregation_columns]
+        .groupby("team", as_index=False)[stage_columns]
         .mean()
     )
 
@@ -148,9 +170,21 @@ def build_team_probability_table(
     """
     Build the main team probability table for forecasting outputs.
 
-    Output columns:
+    Output columns depend on tournament format.
+
+    v1 example:
         - team
         - group_stage_exit_prob
+        - round_of_16_prob
+        - quarterfinal_prob
+        - semifinal_prob
+        - final_prob
+        - champion_prob
+
+    v2 example:
+        - team
+        - group_stage_exit_prob
+        - round_of_32_prob
         - round_of_16_prob
         - quarterfinal_prob
         - semifinal_prob
@@ -160,19 +194,27 @@ def build_team_probability_table(
     stage_presence_df = build_stage_presence_dataframe(simulation_results)
     probability_table = aggregate_stage_probabilities(stage_presence_df)
 
-    probability_table = probability_table.rename(
-        columns={
-            "group_stage_exit": "group_stage_exit_prob",
-            "round_of_16": "round_of_16_prob",
-            "quarterfinal": "quarterfinal_prob",
-            "semifinal": "semifinal_prob",
-            "final": "final_prob",
-            "champion": "champion_prob",
-        }
-    )
+    rename_map = {
+        col: f"{col}_prob"
+        for col in infer_available_stage_columns(stage_presence_df)
+    }
+
+    probability_table = probability_table.rename(columns=rename_map)
+
+    sort_priority = [
+        col for col in [
+            "champion_prob",
+            "final_prob",
+            "semifinal_prob",
+            "quarterfinal_prob",
+            "round_of_16_prob",
+            "round_of_32_prob",
+        ]
+        if col in probability_table.columns
+    ]
 
     probability_table = probability_table.sort_values(
-        by=["champion_prob", "final_prob", "semifinal_prob", "quarterfinal_prob"],
+        by=sort_priority,
         ascending=False,
     ).reset_index(drop=True)
 
@@ -214,7 +256,11 @@ def build_champion_distribution(
     if not champions:
         raise ValueError("No champions found in simulation_results.")
 
-    champion_df = pd.Series(champions, name="team").value_counts(dropna=False).reset_index()
+    champion_df = (
+        pd.Series(champions, name="team")
+        .value_counts(dropna=False)
+        .reset_index()
+    )
     champion_df.columns = ["team", "titles"]
     champion_df["champion_prob"] = champion_df["titles"] / len(simulation_results)
 
@@ -233,37 +279,35 @@ def build_stage_counts_table(
     Useful for QA, debugging, or sanity checks before normalizing.
     """
     stage_presence_df = build_stage_presence_dataframe(simulation_results)
+    stage_columns = infer_available_stage_columns(stage_presence_df)
 
     counts_table = (
         stage_presence_df
-        .groupby("team", as_index=False)[
-            [
-                "group_stage_exit",
-                "round_of_16",
-                "quarterfinal",
-                "semifinal",
-                "final",
-                "champion",
-            ]
-        ]
+        .groupby("team", as_index=False)[stage_columns]
         .sum()
     )
 
-    counts_table = counts_table.rename(
-        columns={
-            "group_stage_exit": "group_stage_exit_count",
-            "round_of_16": "round_of_16_count",
-            "quarterfinal": "quarterfinal_count",
-            "semifinal": "semifinal_count",
-            "final": "final_count",
-            "champion": "champion_count",
-        }
-    )
-
+    rename_map = {
+        col: f"{col}_count"
+        for col in stage_columns
+    }
+    counts_table = counts_table.rename(columns=rename_map)
     counts_table["num_simulations"] = len(simulation_results)
 
+    sort_priority = [
+        col for col in [
+            "champion_count",
+            "final_count",
+            "semifinal_count",
+            "quarterfinal_count",
+            "round_of_16_count",
+            "round_of_32_count",
+        ]
+        if col in counts_table.columns
+    ]
+
     return counts_table.sort_values(
-        by=["champion_count", "final_count", "semifinal_count", "quarterfinal_count"],
+        by=sort_priority,
         ascending=False,
     ).reset_index(drop=True)
 
@@ -328,7 +372,7 @@ def build_summary_metadata(
     validate_simulation_results(simulation_results)
 
     first_result = simulation_results[0]
-    metadata = dict(first_result.metadata)
+    metadata = dict(first_result.metadata or {})
 
     metadata["num_simulations"] = len(simulation_results)
     metadata["num_teams"] = len(extract_all_teams(simulation_results))
@@ -347,7 +391,7 @@ def build_match_log_dataframe(
     records: list[dict[str, Any]] = []
 
     for run_result in simulation_results:
-        for match in run_result.match_results:
+        for match in (run_result.match_results or []):
             records.append(
                 {
                     "simulation_id": run_result.simulation_id,
