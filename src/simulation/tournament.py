@@ -16,9 +16,6 @@ def validate_tournament_groups(
     groups: dict[str, list[str]],
     tournament_config: TournamentConfig,
 ) -> None:
-    """
-    Validate tournament group composition before simulation.
-    """
     if not groups:
         raise ValueError("groups cannot be empty.")
 
@@ -27,13 +24,13 @@ def validate_tournament_groups(
     for group_name, group_teams in groups.items():
         if len(group_teams) != tournament_config.group_size:
             raise ValueError(
-                f"Group '{group_name}' has {len(group_teams)} teams, but "
-                f"group_size={tournament_config.group_size}."
+                f"Group '{group_name}' has {len(group_teams)} teams, "
+                f"expected {tournament_config.group_size}"
             )
 
         if len(set(group_teams)) != len(group_teams):
             raise ValueError(
-                f"Group '{group_name}' contains duplicate teams: {group_teams}"
+                f"Group '{group_name}' contains duplicate teams."
             )
 
         all_teams.extend(group_teams)
@@ -46,10 +43,10 @@ def validate_tournament_groups(
     expected_knockout_teams = (
         len(groups) * tournament_config.teams_advancing_per_group
     )
+
     if expected_knockout_teams % 2 != 0:
         raise ValueError(
-            "The number of teams advancing from groups must be even "
-            "to build a knockout stage."
+            "The number of teams advancing from groups must be even."
         )
 
 
@@ -63,24 +60,13 @@ def simulate_one_tournament(
     group_match_schedule: dict[str, list[tuple[str, str]]] | None = None,
     round_of_16_mapping: list[tuple[str, str, str]] | None = None,
 ) -> TournamentRunResult:
-    """
-    Simulate a single full tournament run.
-
-    Flow:
-        1. simulate group stage
-        2. simulate knockout stage
-        3. return structured run result
-    """
-    validate_tournament_groups(
-        groups=groups,
-        tournament_config=tournament_config,
-    )
+    validate_tournament_groups(groups, tournament_config)
 
     (
-        group_stage_tables,
+        group_tables,
         group_qualified_map,
         qualified_teams_flat,
-        group_stage_match_results,
+        group_stage_results,
     ) = simulate_group_stage(
         groups=groups,
         predictor=predictor,
@@ -98,31 +84,19 @@ def simulate_one_tournament(
         round_of_16_mapping=round_of_16_mapping,
     )
 
-    knockout_match_results = list(
-        knockout_output["all_knockout_results"]  # type: ignore[arg-type]
-    )
-    all_match_results = group_stage_match_results + knockout_match_results
+    knockout_results = list(knockout_output["all_knockout_results"])
+    match_results = group_stage_results + knockout_results
 
     tournament_result = TournamentRunResult(
         simulation_id=simulation_id,
-        group_stage_tables=group_stage_tables,
-        group_stage_match_results=group_stage_match_results,
-        knockout_match_results=knockout_match_results,
-        all_match_results=all_match_results,
+        group_tables=group_tables,
+        group_stage_results=group_stage_results,
         qualified_teams=qualified_teams_flat,
-        round_of_16_teams=list(
-            knockout_output["round_of_16_teams"]  # type: ignore[arg-type]
-        ),
-        quarterfinalists=list(
-            knockout_output["quarterfinalists"]  # type: ignore[arg-type]
-        ),
-        semifinalists=list(
-            knockout_output["semifinalists"]  # type: ignore[arg-type]
-        ),
-        finalists=list(
-            knockout_output["finalists"]  # type: ignore[arg-type]
-        ),
+        quarterfinalists=list(knockout_output["quarterfinalists"]),
+        semifinalists=list(knockout_output["semifinalists"]),
+        finalists=list(knockout_output["finalists"]),
         champion=str(knockout_output["champion"]),
+        match_results=match_results,
         metadata={
             "tournament_name": tournament_config.tournament_name,
             "tournament_id": tournament_config.tournament_id,
@@ -145,22 +119,13 @@ def simulate_many_tournaments(
     group_match_schedule: dict[str, list[tuple[str, str]]] | None = None,
     round_of_16_mapping: list[tuple[str, str, str]] | None = None,
 ) -> list[TournamentRunResult]:
-    """
-    Run N Monte Carlo tournament simulations.
-
-    The predictor is instantiated only once and reused across all runs.
-    The random number generator is also reused to guarantee reproducibility
-    under a fixed random seed.
-    """
-    validate_tournament_groups(
-        groups=groups,
-        tournament_config=tournament_config,
-    )
+    validate_tournament_groups(groups, tournament_config)
 
     predictor = SimulationPredictor(
         simulation_config=simulation_config,
         tournament_config=tournament_config,
     )
+
     rng = build_rng(simulation_config.random_seed)
 
     results: list[TournamentRunResult] = []
@@ -185,13 +150,7 @@ def extract_stage_presence_flags(
     run_result: TournamentRunResult,
     all_teams: list[str],
 ) -> list[dict[str, Any]]:
-    """
-    Convert one tournament run into team-level binary stage flags.
-
-    Useful downstream for aggregation into advancement probabilities.
-    """
     qualified_set = set(run_result.qualified_teams)
-    r16_set = set(run_result.round_of_16_teams)
     qf_set = set(run_result.quarterfinalists)
     sf_set = set(run_result.semifinalists)
     final_set = set(run_result.finalists)
@@ -205,7 +164,7 @@ def extract_stage_presence_flags(
                 "simulation_id": run_result.simulation_id,
                 "team": team,
                 "group_stage_exit": int(team not in qualified_set),
-                "round_of_16": int(team in r16_set),
+                "round_of_16": int(team in qualified_set),
                 "quarterfinal": int(team in qf_set),
                 "semifinal": int(team in sf_set),
                 "final": int(team in final_set),
@@ -219,20 +178,15 @@ def extract_stage_presence_flags(
 def flatten_tournament_run(
     run_result: TournamentRunResult,
 ) -> dict[str, Any]:
-    """
-    Produce a flat summary of one tournament run.
-    """
     return {
         "simulation_id": run_result.simulation_id,
         "qualified_teams": run_result.qualified_teams,
-        "round_of_16_teams": run_result.round_of_16_teams,
         "quarterfinalists": run_result.quarterfinalists,
         "semifinalists": run_result.semifinalists,
         "finalists": run_result.finalists,
         "champion": run_result.champion,
-        "group_stage_match_count": len(run_result.group_stage_match_results),
-        "knockout_match_count": len(run_result.knockout_match_results),
-        "all_match_count": len(run_result.all_match_results),
+        "group_stage_match_count": len(run_result.group_stage_results),
+        "all_match_count": len(run_result.match_results),
         "metadata": run_result.metadata,
     }
 
@@ -240,7 +194,4 @@ def flatten_tournament_run(
 def collect_all_match_logs(
     run_result: TournamentRunResult,
 ) -> list[MatchSimulationResult]:
-    """
-    Return all match logs stored in the tournament result.
-    """
-    return list(run_result.all_match_results)
+    return list(run_result.match_results)

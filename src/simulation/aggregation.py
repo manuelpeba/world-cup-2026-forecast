@@ -28,14 +28,14 @@ def extract_all_teams(
     """
     Extract the full set of teams participating in the simulations.
 
-    Teams are inferred from group-stage tables stored in each tournament run.
+    Teams are inferred from group tables stored in each tournament run.
     """
     validate_simulation_results(simulation_results)
 
     teams: set[str] = set()
 
     for run_result in simulation_results:
-        for group_rows in run_result.group_stage_tables.values():
+        for group_rows in run_result.group_tables.values():
             for row in group_rows:
                 teams.add(row.team)
 
@@ -183,11 +183,7 @@ def add_advancement_complements(
     probability_table: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Add complementary advancement metrics that are often useful in dashboards.
-
-    Derived columns:
-        - advance_from_group_prob
-        - non_champion_prob
+    Add complementary advancement metrics useful for dashboards.
     """
     required_columns = {
         "group_stage_exit_prob",
@@ -279,7 +275,7 @@ def aggregate_simulation_results(
     """
     Main aggregation entry point.
 
-    Returns a dictionary of ready-to-use dataframes:
+    Returns:
         - stage_presence
         - stage_counts
         - team_probabilities
@@ -345,16 +341,13 @@ def build_match_log_dataframe(
 ) -> pd.DataFrame:
     """
     Flatten all match logs across all simulations into one dataframe.
-
-    Includes both group-stage and knockout matches because Opción B stores
-    all_match_results inside TournamentRunResult.
     """
     validate_simulation_results(simulation_results)
 
     records: list[dict[str, Any]] = []
 
     for run_result in simulation_results:
-        for match in run_result.all_match_results:
+        for match in run_result.match_results:
             records.append(
                 {
                     "simulation_id": run_result.simulation_id,

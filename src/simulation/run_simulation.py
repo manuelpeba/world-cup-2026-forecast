@@ -7,11 +7,13 @@ from typing import Any
 
 import pandas as pd
 
+from src.models.match_outcome.predict import MatchPredictionConfig, MatchPredictor
 from src.simulation.aggregation import (
     aggregate_simulation_results,
     round_probability_columns,
 )
 from src.simulation.config import SimulationConfig, TournamentConfig
+from src.simulation.parallel import simulate_many_tournaments_parallel
 from src.simulation.reporting import export_simulation_outputs
 from src.simulation.tournament import simulate_many_tournaments
 
@@ -23,7 +25,7 @@ def load_groups_from_json(input_path: Path) -> dict[str, list[str]]:
     Expected format:
     {
         "A": ["Spain", "Brazil", "Japan", "Mexico"],
-        "B": ["France", "Argentina", "USA", "Morocco"]
+        "B": ["France", "Argentina", "United States", "Morocco"]
     }
     """
     if not input_path.exists():
@@ -99,7 +101,7 @@ def load_group_match_schedule_from_json(
     Expected format:
     {
         "A": [["Spain", "Brazil"], ["Japan", "Mexico"], ...],
-        "B": [["France", "USA"], ["Argentina", "Morocco"], ...]
+        "B": [["France", "United States"], ["Argentina", "Morocco"], ...]
     }
     """
     if input_path is None:
@@ -145,6 +147,39 @@ def load_group_match_schedule_from_json(
     return schedule
 
 
+def validate_group_team_names(
+    groups: dict[str, list[str]],
+    simulation_config: SimulationConfig,
+    tournament_config: TournamentConfig,
+) -> None:
+    """
+    Validate that all teams from the input groups exist in latest_team_features.
+    """
+    predictor = MatchPredictor(
+        MatchPredictionConfig(
+            model_name=simulation_config.model_name,
+            latest_features_path=tournament_config.features_path,
+            models_dir=tournament_config.model_artifacts_dir,
+        )
+    )
+
+    available_teams = set(predictor.list_available_teams())
+    missing: list[tuple[str, str]] = []
+
+    for group_name, teams in groups.items():
+        for team in teams:
+            if team not in available_teams:
+                missing.append((group_name, team))
+
+    if missing:
+        formatted = ", ".join(f"{group}:{team}" for group, team in missing)
+        raise ValueError(
+            "Some teams from the input groups were not found in "
+            "latest_team_features.parquet: "
+            f"{formatted}"
+        )
+
+
 def build_simulation_config(args: argparse.Namespace) -> SimulationConfig:
     """
     Build SimulationConfig from CLI args.
@@ -185,6 +220,7 @@ def print_run_summary(
     simulation_config: SimulationConfig,
     tournament_config: TournamentConfig,
     groups: dict[str, list[str]],
+    num_workers: int,
 ) -> None:
     """
     Print simulation setup summary to console.
@@ -201,6 +237,7 @@ def print_run_summary(
     print(f"Random seed:             {simulation_config.random_seed}")
     print(f"Neutral venue:           {simulation_config.neutral_venue}")
     print(f"Knockout draw handling:  {simulation_config.knockout_draw_resolution}")
+    print(f"Workers:                 {num_workers}")
     print(f"Groups:                  {len(groups)}")
     print(f"Teams:                   {total_teams}")
     print(f"Output dir:              {simulation_config.output_dir}")
@@ -243,6 +280,7 @@ def run_simulation_pipeline(
     export_stage_presence: bool = False,
     export_stage_counts: bool = False,
     decimals: int = 4,
+    num_workers: int = 1,
 ) -> dict[str, Any]:
     """
     End-to-end simulation pipeline:
@@ -251,13 +289,23 @@ def run_simulation_pipeline(
         3. export artifacts
         4. return useful objects for downstream use
     """
-    simulation_results = simulate_many_tournaments(
-        groups=groups,
-        simulation_config=simulation_config,
-        tournament_config=tournament_config,
-        group_match_schedule=group_match_schedule,
-        round_of_16_mapping=round_of_16_mapping,
-    )
+    if num_workers > 1:
+        simulation_results = simulate_many_tournaments_parallel(
+            groups=groups,
+            simulation_config=simulation_config,
+            tournament_config=tournament_config,
+            group_match_schedule=group_match_schedule,
+            round_of_16_mapping=round_of_16_mapping,
+            num_workers=num_workers,
+        )
+    else:
+        simulation_results = simulate_many_tournaments(
+            groups=groups,
+            simulation_config=simulation_config,
+            tournament_config=tournament_config,
+            group_match_schedule=group_match_schedule,
+            round_of_16_mapping=round_of_16_mapping,
+        )
 
     aggregated_outputs = aggregate_simulation_results(
         simulation_results=simulation_results,
@@ -311,6 +359,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
         type=int,
         default=10_000,
         help="Number of Monte Carlo tournament simulations.",
+    )
+    parser.add_argument(
+        "--num-workers",
+        type=int,
+        default=1,
+        help="Number of worker processes for parallel simulation.",
     )
     parser.add_argument(
         "--random-seed",
@@ -441,6 +495,9 @@ def main() -> None:
     parser = build_arg_parser()
     args = parser.parse_args()
 
+    if args.num_workers < 1:
+        raise ValueError("--num-workers must be >= 1")
+
     groups = load_groups_from_json(Path(args.groups_path))
     group_match_schedule = load_group_match_schedule_from_json(
         Path(args.group_match_schedule_path)
@@ -456,10 +513,17 @@ def main() -> None:
     simulation_config = build_simulation_config(args)
     tournament_config = build_tournament_config(args)
 
+    validate_group_team_names(
+        groups=groups,
+        simulation_config=simulation_config,
+        tournament_config=tournament_config,
+    )
+
     print_run_summary(
         simulation_config=simulation_config,
         tournament_config=tournament_config,
         groups=groups,
+        num_workers=args.num_workers,
     )
 
     outputs = run_simulation_pipeline(
@@ -471,6 +535,7 @@ def main() -> None:
         export_stage_presence=args.export_stage_presence,
         export_stage_counts=args.export_stage_counts,
         decimals=args.round_decimals,
+        num_workers=args.num_workers,
     )
 
     aggregated_outputs = outputs["aggregated_outputs"]

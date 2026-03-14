@@ -7,6 +7,6 @@
   "num_groups": 8,
   "group_size": 4,
   "teams_advancing_per_group": 2,
-  "num_simulations": 10000,
+  "num_simulations": 100000,
   "num_teams": 32
 }

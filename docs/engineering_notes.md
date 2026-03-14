@@ -1,614 +1,350 @@
-# Engineering Notes – World Cup 2026 Forecast
+A continuación tienes **dos documentos completos en inglés**, listos para pegar en:
 
-This document tracks engineering decisions, pitfalls, and development conventions used in the project.
+```
+docs/engineering_notes.md
+docs/modeling_notes.md
+```
 
-The goal is to avoid repeating common errors and maintain a consistent development workflow.
+Están escritos en un estilo **técnico y profesional**, pensado para recruiters de:
+
+* football clubs
+* sports analytics companies
+* betting analytics
+* data science teams
 
 ---
 
-# 1. Project Execution Rules
+# `docs/engineering_notes.md`
 
-## Running Python modules
+```markdown
+# Engineering Notes
 
-Python modules inside the `src/` directory must always be executed using the module syntax:
+## Project Overview
 
-```bash
-python -m src.module.submodule
-```
-Examples:
+This project implements a production-style football forecasting pipeline that combines:
 
-`python -m src.pipelines.ingest_data`
-`python -m src.features.team_features`
+- probabilistic match outcome prediction
+- tournament-level Monte Carlo simulation
+- scalable simulation execution
+- structured aggregation of results
+- reproducible artifact exports
+- interactive visualization via Streamlit
 
-Running scripts directly (e.g. python src/.../file.py) may break imports.
+The system simulates complete international tournaments (currently a 32-team World Cup format) and estimates advancement probabilities for each team.
 
-# 2. Project Path Management
+Outputs include:
 
-Paths are centralized in:
+- probability of advancing from the group stage
+- probability of reaching each knockout round
+- probability of winning the tournament
 
-`src/utils/config.py`
+The architecture is modular and designed to resemble a simplified production forecasting system.
 
-This file defines:
+---
 
-- PROJECT_ROOT
+# System Architecture
 
-- DATA_DIR
+The simulation pipeline is divided into several independent modules.
 
-- RAW_DATA_DIR
-
-- INTERIM_DATA_DIR
-
-- PROCESSED_DATA_DIR
-
-- ARTIFACTS_DIR
-
-Example usage:
-
-`from src.utils.config import PROCESSED_DATA_DIR`
-
-Avoid hardcoded paths in scripts or notebooks.
-
-# 3. Notebook Bootstrap
-
-All notebooks must begin with the following setup cell:
-
-```bash
-import sys
-from pathlib import Path
-
-PROJECT_ROOT = Path.cwd().parent
-sys.path.append(str(PROJECT_ROOT))
 ```
 
-This ensures that the src module can be imported.
+data → features → match prediction → tournament simulation → aggregation → reporting → dashboard
 
-# 4. Data Pipeline Rule
+```
 
-Derived datasets must not be used before running the pipeline that generates them.
+Core modules are located under:
+
+```
+
+src/
+├─ models/
+├─ simulation/
+├─ utils/
+
+````
+
+The simulation layer contains most of the engineering logic.
+
+---
+
+# Simulation Engine
+
+The tournament simulator is built as a Monte Carlo engine.
+
+For each simulation run:
+
+1. Group stage matches are simulated.
+2. Group tables are computed.
+3. Teams advance to the knockout bracket.
+4. Knockout rounds are simulated until a champion is determined.
+
+This process is repeated **N times** to estimate stage probabilities.
+
+Example command:
+
+```bash
+py -m src.simulation.run_simulation \
+--groups-path configs/world_cup_groups.json \
+--num-simulations 100000 \
+--num-workers 4
+````
+
+---
+
+# Module Responsibilities
+
+## `group_stage.py`
+
+Responsible for:
+
+* simulating round-robin matches within groups
+* updating group tables
+* computing points and tie-breakers
+* determining which teams advance
+
+Each group produces:
+
+```
+GroupTable
+QualifiedTeams
+MatchSimulationResults
+```
+
+---
+
+## `knockout_stage.py`
+
+Builds and simulates the knockout bracket.
+
+Rounds simulated:
+
+```
+Round of 16
+Quarterfinals
+Semifinals
+Final
+```
+
+Outputs:
+
+```
+quarterfinalists
+semifinalists
+finalists
+champion
+```
+
+Each knockout match:
+
+1. obtains match probabilities from the prediction model
+2. samples an outcome
+3. resolves draws using a configured rule
+
+Draw resolution methods include:
+
+```
+coin_flip
+elo_weighted
+```
+
+---
+
+## `tournament.py`
+
+This module orchestrates a **single tournament simulation**.
+
+Main steps:
+
+```
+simulate_group_stage()
+simulate_knockout_stage()
+assemble TournamentRunResult
+```
+
+It also provides:
+
+```
+simulate_many_tournaments()
+```
+
+which performs repeated simulations using a shared predictor instance.
+
+---
+
+## `aggregation.py`
+
+Transforms raw simulation runs into analytical outputs.
+
+Key outputs:
+
+```
+team_probabilities
+champion_distribution
+stage_presence
+stage_counts
+```
+
+Probabilities are computed by averaging binary stage indicators across simulations.
 
 Example:
 
-Before using:
-
-`data/interim/matches_clean.parquet`
-
-Run:
-
-`python -m src.pipelines.ingest_data`
-
-# 5. Directory Creation
-
-When creating new modules, ensure the directory exists first.
-
-Example:
-
-```bash
-mkdir -p src/pipelines
-touch src/pipelines/new_pipeline.py
+```
+P(team reaches semifinal)
+= mean(semifinal_flag)
 ```
 
-# 6. Common Pitfalls Encountered
+---
 
-## Relative paths in notebooks
+## `reporting.py`
 
-Notebooks run from the `notebooks/` directory.
+Exports simulation outputs to disk.
 
-Therefore:
+Generated artifacts:
 
-`data/...`
+```
+team_probabilities.parquet
+team_probabilities.csv
 
-may not resolve correctly.
+champion_distribution.parquet
+champion_distribution.csv
 
-Use PROJECT_ROOT with Path.
+match_logs.parquet
 
-## Python module resolution errors
+summary_metadata.json
+```
 
-Error example:
+These files serve as inputs for:
 
-`ModuleNotFoundError: No module named 'src'`
-
-Cause:
-
-Running scripts directly instead of with python -m.
-
-Solution:
-
-Use module execution.
-
-# 7. Development Guidelines
-
-- Keep notebooks for exploration only
-
-- Move reusable logic into src/
-
-- Pipelines must produce reproducible datasets
-
-- Models should only consume processed datasets
-
-- Avoid circular imports in src/
-
-# 8. Future Engineering Topics
-
-This document will expand with:
-
-- Data validation rules
-
-- Feature store decisions
-
-- Model versioning
-
-- Simulation reproducibility
-
-- Experiment tracking
+* dashboards
+* external analysis
+* reporting pipelines
 
 ---
 
-# 9. Dataset Filtering Strategy (v2)
+# Parallel Simulation
 
-During exploratory analysis of the `team_match_features` dataset, the following issue was identified:
+The engine supports parallel execution.
 
-Even after removing many non-FIFA teams through an explicit exclusion list, several regional or non-eligible teams still remained in the dataset (e.g., Brittany).
+Simulations can be distributed across multiple workers:
 
-This revealed that the blacklist approach was not sufficiently robust.
+```
+--num-workers 4
+```
 
-## Decision
+Each worker runs independent batches of tournament simulations.
 
-The filtering strategy will move from a **blacklist model** to an **allowlist model**.
+Benefits:
 
-Instead of excluding specific teams, the pipeline will explicitly keep only teams that belong to a curated list of valid national teams.
+* near-linear scaling
+* significantly faster large simulation runs
+* reproducible results via controlled random seeds
 
-This list will be stored in:
+Example scale:
 
-`configs/allowed_teams.yaml`
+```
+100,000 tournament simulations
+executed in seconds to minutes
+```
 
-
-## Benefits
-
-This approach:
-
-- prevents regional or CONIFA teams from entering the dataset
-- makes the filtering logic explicit and auditable
-- improves reproducibility
-- simplifies future maintenance
-
-## Pipeline Update
-
-The filtering pipeline will now follow this order:
-
-team_match_features
-↓
-filter by year
-↓
-filter by tournament
-↓
-filter by allowed national teams
-↓
-drop rows without rolling history
-↓
-matches_filtered
-
-
-## Future Improvements
-
-Future versions may include:
-
-- team name normalization (aliases)
-- historical team mappings (e.g., Yugoslavia → Serbia/Croatia etc.)
-- confederation-level metadata
-- FIFA membership metadata
-
-## Dataset filtering reduced matches from 98k to 63k rows.
-
-Final dataset properties:
-- ~31k real matches
-- 185 national teams
-- time range: 1950–present
-- tournaments: 26 relevant international competitions
+depending on hardware.
 
 ---
 
-# 10. Team Strength Model — Elo Rating System
+# Reproducibility
 
-A dynamic Elo rating model was implemented to estimate the evolving strength of national teams over time.
+All simulations use a deterministic random seed:
 
-Script:
+```
+SimulationConfig.random_seed
+```
 
-`src/models/team_strength/elo_model.py`
-
-Input dataset:
-
-`data/processed/matches_filtered.parquet`
-
-Output dataset:
-
-`data/processed/team_elo_ratings.parquet`
-
+This guarantees reproducibility across runs when configuration is unchanged.
 
 ---
 
-## Model Design
+# Output Data Model
 
-The Elo system estimates team strength using historical match results and updates ratings sequentially in chronological order.
+The core output structure is `TournamentRunResult`.
 
-Each national team starts with a base rating of: 5.000
+Key attributes:
 
-Ratings are updated after every match using the standard Elo update formula:
+```
+simulation_id
+group_tables
+group_stage_results
+qualified_teams
+quarterfinalists
+semifinalists
+finalists
+champion
+match_results
+metadata
+```
 
-    R_new = R_old + K × G × (S − E)
-
-
-Where:
-
-| Variable | Meaning |
-|--------|--------|
-| K | Tournament importance factor |
-| G | Goal difference multiplier |
-| S | Actual match result |
-| E | Expected match result |
-
----
-
-## Expected Result
-
-The expected result is computed as:
-
-    E = 1 / (1 + 10^((R_opponent − R_team) / 400))
-
+Aggregation modules operate directly on this object.
 
 ---
 
-## Tournament Weighting (K-factor)
+# Visualization Layer
 
-Different competitions have different importance levels:
+A Streamlit dashboard (`app/streamlit_app.py`) provides an interactive interface.
 
-| Competition Type | K |
-|------------------|--|
-| Friendly | 20 |
-| Qualification matches | 30 |
-| Regional competitions / Nations League | 35 |
-| Continental tournaments | 40 |
-| FIFA World Cup | 50 |
+The dashboard reads exported artifacts and presents:
 
-This ensures that high-stakes matches impact ratings more strongly.
+* team advancement probabilities
+* champion probability rankings
+* team-level breakdowns
+* match log previews
 
----
-
-## Goal Difference Adjustment
-
-To reflect the information contained in large victories:
-
-| Goal Difference | Multiplier |
-|-----------------|-----------|
-| 1 goal | 1.0 |
-| 2 goals | 1.5 |
-| 3+ goals | 1.75 |
+This layer is intentionally decoupled from the simulation engine.
 
 ---
 
-## Home Advantage
+# Current Limitations
 
-If the match is not played at a neutral venue, the home team receives an Elo adjustment: +80 Elo
+The current system assumes:
 
+```
+32 teams
+8 groups
+2 teams advancing per group
+standard knockout bracket
+```
 
-before computing expected results.
+The real 2026 World Cup format will include:
 
----
+```
+48 teams
+12 groups
+best third-place teams advancing
+round of 32
+```
 
-## Output Features
-
-The resulting dataset contains the following key variables:
-
-| Feature | Description |
-|-------|-------------|
-| elo_before | Team rating before the match |
-| elo_after | Team rating after the match |
-| opponent_elo_before | Opponent rating before match |
-| elo_diff_before | Rating difference between teams |
-| expected_result | Predicted probability of winning |
-| actual_result | Actual match outcome |
-
-This dataset forms the **team strength layer** of the project and will be used to construct match prediction features.
+Future work will extend the bracket generator to support this structure.
 
 ---
 
-## Dataset Summary
+# Future Engineering Improvements
 
-Current Elo dataset:
+Potential upgrades include:
 
-- ~63k team-level observations
-- ~31k real matches
-- 185 national teams
-- Time span: **1950 → present**
-
----
-
-## Role in the Modeling Framework
-
-The Elo model corresponds to **Layer 2** of the project architecture:
-
-Layer 1 — Player Impact Model
-Layer 2 — Team Strength Model (Elo)
-Layer 3 — Match Outcome ML Model
-
-The Elo ratings will be combined with rolling team performance features to build the final match prediction dataset.
+* distributed simulation execution
+* GPU acceleration for match prediction
+* scoreline simulation (Poisson / xG models)
+* dynamic Elo updates during the tournament
+* live tournament updates
+* API layer for real-time queries
 
 ---
 
-# 11. Match Feature Engineering
+# Summary
 
-Script:
-src/features/match_features.py
+The project demonstrates how to build a modular football forecasting system that integrates:
 
-Input datasets:
+* machine learning prediction
+* tournament simulation
+* scalable computation
+* analytical reporting
+* interactive visualization
 
-data/processed/matches_filtered.parquet
-data/processed/team_elo_ratings.parquet
-
-Output dataset:
-
-data/processed/match_model_dataset.parquet
-
----
-
-## Purpose
-
-This stage transforms the team-level dataset into a **match-level modeling dataset** suitable for machine learning models.
-
-Each match becomes **one row**, combining both team perspectives.
-
----
-
-## Feature Categories
-
-### Team Strength
-
-Derived from the Elo model.
-
-Features include:
-
-- team_a_elo_before
-- team_b_elo_before
-- elo_diff
-
----
-
-### Recent Team Form
-
-Rolling performance features computed over recent matches:
-
-- rolling_goals_scored
-- rolling_goals_conceded
-- rolling_goal_diff
-- rolling_win_rate
-- rolling_points
-
-Differential features are computed between both teams.
-
----
-
-### Contextual Match Variables
-
-Additional contextual information:
-
-- tournament
-- neutral_venue
-- tournament importance (k_factor)
-
----
-
-## Target Variable
-
-The model predicts the match outcome from the perspective of **team A**.
-
-Target classes:
-
-win
-draw
-loss
-
-Distribution in dataset:
-
-win  ≈ 48%
-loss ≈ 27%
-draw ≈ 24%
-
----
-
-## Dataset Characteristics
-
-Matches: ~31k  
-Teams: 185  
-Period: 1950 → present
-
-No missing values detected after feature engineering.
-
----
-
-## Role in Modeling Architecture
-
-This dataset feeds the final layer:
-
-Layer 1 — Player Impact Model (future)
-Layer 2 — Team Strength Model (Elo)
-Layer 3 — Match Outcome ML Model
-
-The Match Outcome Model will be trained on this dataset.
-
-## Model match outcome - train
-
-scikit-learn >=1.5 removed LogisticRegression multi_class parameter
-models should rely on solver-based automatic multinomial detection
-
-## Match Outcome Model Improvements
-
-Date: 12/03/2026
-
-Changes introduced in the modeling pipeline:
-
-### New Feature Engineering
-
-Two new features were introduced in the match modeling dataset:
-
-- `abs_elo_diff`
-- `neutral_venue`
-
-#### abs_elo_diff
-
-Absolute difference between the pre-match Elo ratings of the two teams.
-
-Motivation:
-- Captures match balance
-- Helps model draw probability
-
-`abs_elo_diff = abs(team_a_elo_before - team_b_elo_before)`
-
-
-#### neutral_venue
-
-Binary feature indicating whether the match was played at a neutral venue.
-
-Motivation:
-- International tournaments are often played at neutral sites
-- Important contextual variable for match outcome modeling
-
-Values:
-
-0 = non-neutral venue
-1 = neutral venue
-
-
-### Training Pipeline Updates
-
-The training pipeline was updated to:
-
-- include `abs_elo_diff` in numeric features
-- maintain `neutral_venue` as categorical feature
-- export model metadata for downstream inference
-
-Metadata files saved per model:
-
-`artifacts/models/{model_name}_metadata.json`
-
-
-Metadata includes:
-
-- feature_columns
-- numeric_features
-- categorical_features
-- class_labels
-
-This enables robust model loading during prediction and simulation stages.
-
-### Model Performance
-
-After introducing the new features:
-
-| Model | Accuracy | Log Loss | Brier |
-|------|------|------|------|
-| Logistic Regression | ~0.608 | ~0.765 | ~0.464 |
-| Random Forest | ~0.614 | ~0.767 | ~0.457 |
-
-Performance remained stable while improving model specification.
-
-## Model Training Architecture Update
-
-A model specification strategy was introduced to support multiple feature configurations during training.
-
-The training pipeline now supports two different model specifications:
-
-full_model
-prematch_model
-
-
-### Purpose
-
-The goal is to separate:
-
-1. models optimized for historical predictive performance
-2. models designed for forward simulation of future matches
-
-This avoids repeatedly modifying feature lists during experimentation.
-
----
-
-### Training Pipeline Design
-
-The training script now supports different feature sets.
-
-`src/models/match_outcome/train.py`
-
-Each model specification defines its own feature list.
-
-Example:
-
-`NUMERIC_FEATURES_FULL`
-`NUMERIC_FEATURES_PREMATCH`
-
-
-Both specifications are trained independently.
-
-Artifacts are saved separately:
-
-`artifacts/models/`
-`logistic_regression_full.joblib`
-`logistic_regression_prematch.joblib`
-
-Metadata files are also generated:
-
-`logistic_regression_full_metadata.json`
-`logistic_regression_prematch_metadata.json`
-
-
-This allows the prediction module to load the correct feature configuration automatically.
-
----
-
-### Predictor Compatibility
-
-The inference module:
-
-`src/models/match_outcome/predict.py`
-
-
-uses the metadata file associated with each model.
-
-The metadata defines:
-
-- numeric features
-- categorical features
-- class labels
-- feature column order
-
-This ensures that prediction remains robust even when model specifications evolve.
-
----
-
-### Evaluation Strategy
-
-Model validation scripts can now evaluate both specifications.
-
-Example workflow:
-
-    train models
-    ↓
-    validate predictor
-    ↓
-    compare specifications
-
-Results are saved to:
-
-`artifacts/metrics/`
-
-This supports reproducible experimentation and easier comparison of modeling approaches.
-
----
-
-### Benefits
-
-This architecture provides:
-
-- reproducible experiments
-- safe iteration on feature sets
-- clearer separation between modeling and simulation requirements
-- easier debugging of inference pipelines
 

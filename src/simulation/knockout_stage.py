@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-from typing import Mapping
+from typing import Any, Mapping
 
 import numpy as np
 
 from src.simulation.config import SimulationConfig
 from src.simulation.predictor_adapter import SimulationPredictor
 from src.simulation.sampling import sample_match_outcome, sample_penalty_winner
-from src.simulation.structures import KnockoutMatch, MatchSimulationResult, MatchProbabilities
+from src.simulation.structures import (
+    KnockoutMatch,
+    MatchProbabilities,
+    MatchSimulationResult,
+)
 
 
 DEFAULT_ROUND_OF_16_MAPPING: list[tuple[str, str, str]] = [
@@ -25,6 +29,23 @@ DEFAULT_ROUND_OF_16_MAPPING: list[tuple[str, str, str]] = [
 def build_group_position_index(
     group_qualified_map: Mapping[str, list[str]],
 ) -> dict[str, str]:
+    """
+    Convert qualified teams by group into positional references.
+
+    Example:
+        {
+            "A": ["Spain", "Brazil"],
+            "B": ["France", "United States"],
+        }
+
+    becomes:
+        {
+            "A1": "Spain",
+            "A2": "Brazil",
+            "B1": "France",
+            "B2": "United States",
+        }
+    """
     position_index: dict[str, str] = {}
 
     for group_name, qualified_teams in group_qualified_map.items():
@@ -44,6 +65,9 @@ def build_round_of_16_bracket(
     group_qualified_map: Mapping[str, list[str]],
     knockout_mapping: list[tuple[str, str, str]] | None = None,
 ) -> list[KnockoutMatch]:
+    """
+    Build round-of-16 fixtures from group-stage qualified teams.
+    """
     mapping = knockout_mapping or DEFAULT_ROUND_OF_16_MAPPING
     position_index = build_group_position_index(group_qualified_map)
 
@@ -77,6 +101,12 @@ def simulate_knockout_match(
     simulation_config: SimulationConfig,
     rng: np.random.Generator,
 ) -> MatchSimulationResult:
+    """
+    Simulate one knockout match.
+
+    If regular time is sampled as draw, a winner is resolved using the
+    configured knockout draw resolution strategy.
+    """
     probabilities: MatchProbabilities = predictor.predict_match_proba(
         team_a=match.team_a,
         team_b=match.team_b,
@@ -124,6 +154,14 @@ def build_next_round_matches(
     previous_round_results: list[MatchSimulationResult],
     next_stage: str,
 ) -> list[KnockoutMatch]:
+    """
+    Build the next knockout round by pairing winners in bracket order.
+
+    Examples:
+        8 round-of-16 winners -> 4 quarterfinal matches
+        4 quarterfinal winners -> 2 semifinal matches
+        2 semifinal winners -> 1 final match
+    """
     winners = [result.winner for result in previous_round_results]
 
     if any(winner is None for winner in winners):
@@ -161,6 +199,13 @@ def simulate_knockout_round(
     simulation_config: SimulationConfig,
     rng: np.random.Generator,
 ) -> tuple[list[MatchSimulationResult], list[str]]:
+    """
+    Simulate all matches in one knockout round.
+
+    Returns:
+        - match results
+        - ordered list of winners
+    """
     results: list[MatchSimulationResult] = []
 
     for match in matches:
@@ -189,13 +234,23 @@ def simulate_knockout_stage(
     simulation_config: SimulationConfig,
     rng: np.random.Generator,
     round_of_16_mapping: list[tuple[str, str, str]] | None = None,
-) -> dict[str, list[str] | list[MatchSimulationResult] | str]:
+) -> dict[str, Any]:
+    """
+    Simulate the full knockout stage from Round of 16 to Final.
+
+    Correct stage semantics:
+        - qualified_teams: group-stage qualifiers (handled outside this module)
+        - quarterfinalists: winners of Round of 16
+        - semifinalists: winners of Quarterfinals
+        - finalists: winners of Semifinals
+        - champion: winner of Final
+    """
     round_of_16_matches = build_round_of_16_bracket(
         group_qualified_map=group_qualified_map,
         knockout_mapping=round_of_16_mapping,
     )
 
-    round_of_16_results, round_of_16_winners = simulate_knockout_round(
+    round_of_16_results, quarterfinalists = simulate_knockout_round(
         matches=round_of_16_matches,
         predictor=predictor,
         simulation_config=simulation_config,
@@ -206,7 +261,7 @@ def simulate_knockout_stage(
         previous_round_results=round_of_16_results,
         next_stage="quarterfinals",
     )
-    quarterfinal_results, quarterfinal_winners = simulate_knockout_round(
+    quarterfinal_results, semifinalists = simulate_knockout_round(
         matches=quarterfinal_matches,
         predictor=predictor,
         simulation_config=simulation_config,
@@ -217,7 +272,7 @@ def simulate_knockout_stage(
         previous_round_results=quarterfinal_results,
         next_stage="semifinals",
     )
-    semifinal_results, semifinal_winners = simulate_knockout_round(
+    semifinal_results, finalists = simulate_knockout_round(
         matches=semifinal_matches,
         predictor=predictor,
         simulation_config=simulation_config,
@@ -242,7 +297,7 @@ def simulate_knockout_stage(
 
     champion = final_winners[0]
 
-    all_match_results: list[MatchSimulationResult] = (
+    all_knockout_results: list[MatchSimulationResult] = (
         round_of_16_results
         + quarterfinal_results
         + semifinal_results
@@ -250,22 +305,24 @@ def simulate_knockout_stage(
     )
 
     return {
-        "round_of_16_teams": round_of_16_winners,
-        "quarterfinalists": quarterfinal_winners,
-        "semifinalists": semifinal_winners,
-        "finalists": semifinal_winners,
+        "quarterfinalists": quarterfinalists,
+        "semifinalists": semifinalists,
+        "finalists": finalists,
         "champion": champion,
         "round_of_16_results": round_of_16_results,
         "quarterfinal_results": quarterfinal_results,
         "semifinal_results": semifinal_results,
         "final_results": final_results,
-        "all_knockout_results": all_match_results,
+        "all_knockout_results": all_knockout_results,
     }
 
 
 def flatten_knockout_results(
-    knockout_output: dict[str, list[str] | list[MatchSimulationResult] | str],
+    knockout_output: dict[str, Any],
 ) -> list[MatchSimulationResult]:
+    """
+    Convenience helper to flatten all knockout match logs.
+    """
     results = knockout_output.get("all_knockout_results", [])
     if not isinstance(results, list):
         raise TypeError("'all_knockout_results' must be a list.")
@@ -275,6 +332,9 @@ def flatten_knockout_results(
 def knockout_results_to_records(
     match_results: list[MatchSimulationResult],
 ) -> list[dict[str, str | float | None]]:
+    """
+    Convert knockout match results into flat serializable records.
+    """
     records: list[dict[str, str | float | None]] = []
 
     for result in match_results:
