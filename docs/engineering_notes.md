@@ -1,22 +1,3 @@
-A continuación tienes **dos documentos completos en inglés**, listos para pegar en:
-
-```
-docs/engineering_notes.md
-docs/modeling_notes.md
-```
-
-Están escritos en un estilo **técnico y profesional**, pensado para recruiters de:
-
-* football clubs
-* sports analytics companies
-* betting analytics
-* data science teams
-
----
-
-# `docs/engineering_notes.md`
-
-```markdown
 # Engineering Notes
 
 ## Project Overview
@@ -46,22 +27,16 @@ The architecture is modular and designed to resemble a simplified production for
 
 The simulation pipeline is divided into several independent modules.
 
-```
-
 data → features → match prediction → tournament simulation → aggregation → reporting → dashboard
-
-```
 
 Core modules are located under:
 
-```
-
+```bash
 src/
 ├─ models/
 ├─ simulation/
 ├─ utils/
-
-````
+```
 
 The simulation layer contains most of the engineering logic.
 
@@ -87,8 +62,7 @@ py -m src.simulation.run_simulation \
 --groups-path configs/world_cup_groups.json \
 --num-simulations 100000 \
 --num-workers 4
-````
-
+```
 ---
 
 # Module Responsibilities
@@ -104,11 +78,9 @@ Responsible for:
 
 Each group produces:
 
-```
 GroupTable
 QualifiedTeams
 MatchSimulationResults
-```
 
 ---
 
@@ -118,21 +90,17 @@ Builds and simulates the knockout bracket.
 
 Rounds simulated:
 
-```
 Round of 16
 Quarterfinals
 Semifinals
 Final
-```
 
 Outputs:
 
-```
 quarterfinalists
 semifinalists
 finalists
 champion
-```
 
 Each knockout match:
 
@@ -142,10 +110,8 @@ Each knockout match:
 
 Draw resolution methods include:
 
-```
 coin_flip
 elo_weighted
-```
 
 ---
 
@@ -155,17 +121,13 @@ This module orchestrates a **single tournament simulation**.
 
 Main steps:
 
-```
 simulate_group_stage()
 simulate_knockout_stage()
 assemble TournamentRunResult
-```
 
 It also provides:
 
-```
 simulate_many_tournaments()
-```
 
 which performs repeated simulations using a shared predictor instance.
 
@@ -177,21 +139,17 @@ Transforms raw simulation runs into analytical outputs.
 
 Key outputs:
 
-```
 team_probabilities
 champion_distribution
 stage_presence
 stage_counts
-```
 
 Probabilities are computed by averaging binary stage indicators across simulations.
 
 Example:
 
-```
 P(team reaches semifinal)
 = mean(semifinal_flag)
-```
 
 ---
 
@@ -201,7 +159,6 @@ Exports simulation outputs to disk.
 
 Generated artifacts:
 
-```
 team_probabilities.parquet
 team_probabilities.csv
 
@@ -211,7 +168,6 @@ champion_distribution.csv
 match_logs.parquet
 
 summary_metadata.json
-```
 
 These files serve as inputs for:
 
@@ -227,9 +183,7 @@ The engine supports parallel execution.
 
 Simulations can be distributed across multiple workers:
 
-```
 --num-workers 4
-```
 
 Each worker runs independent batches of tournament simulations.
 
@@ -241,10 +195,8 @@ Benefits:
 
 Example scale:
 
-```
 100,000 tournament simulations
 executed in seconds to minutes
-```
 
 depending on hardware.
 
@@ -254,9 +206,7 @@ depending on hardware.
 
 All simulations use a deterministic random seed:
 
-```
 SimulationConfig.random_seed
-```
 
 This guarantees reproducibility across runs when configuration is unchanged.
 
@@ -268,7 +218,6 @@ The core output structure is `TournamentRunResult`.
 
 Key attributes:
 
-```
 simulation_id
 group_tables
 group_stage_results
@@ -279,7 +228,6 @@ finalists
 champion
 match_results
 metadata
-```
 
 Aggregation modules operate directly on this object.
 
@@ -304,21 +252,17 @@ This layer is intentionally decoupled from the simulation engine.
 
 The current system assumes:
 
-```
 32 teams
 8 groups
 2 teams advancing per group
 standard knockout bracket
-```
 
 The real 2026 World Cup format will include:
 
-```
 48 teams
 12 groups
 best third-place teams advancing
 round of 32
-```
 
 Future work will extend the bracket generator to support this structure.
 
