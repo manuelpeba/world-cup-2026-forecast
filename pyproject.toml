@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "world-cup-2026-forecast"
+version = "0.1.0"
+description = "Machine learning and Monte Carlo simulation system to forecast the FIFA World Cup 2026."
+readme = "README.md"
+requires-python = ">=3.10"
+
+authors = [
+  { name = "Manuel Perez Banuls" }
+]
+
+keywords = [
+  "football analytics",
+  "sports analytics",
+  "machine learning",
+  "monte carlo simulation",
+  "world cup forecasting"
+]
+
+dependencies = [
+  "pandas",
+  "numpy",
+  "scikit-learn",
+  "xgboost",
+  "lightgbm",
+  "pymc",
+  "pyarrow",
+  "requests",
+  "pyyaml",
+  "tqdm",
+  "plotly",
+  "streamlit",
+  "python-dotenv"
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I"]

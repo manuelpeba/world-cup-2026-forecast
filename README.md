@@ -408,6 +408,19 @@ modeling extra time.
 
 ---
 
+## Environment setup
+
+Create a local environment configuration file:
+
+```bash
+cp .env.example .env
+```
+Edit the variables if necessary.
+
+The .env file is ignored by git and should not be committed to the repository.
+
+---
+
 # 🚀 Future Improvements
 
 Potential extensions include:
