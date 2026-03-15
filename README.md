@@ -349,18 +349,22 @@ Run tournament simulations from the command line:
 ## Classic Tournement
 
 ```bash
-py -m src.simulation.run_simulation --groups-path configs/world_cup_groups.json --num-simulations 10000
+py -m src.simulation.run_simulation \
+  --groups-path configs/world_cup_groups.json \
+  --num-simulations 10000
 ```
 
 Example output:
 
-TOP TEAMS BY CHAMPION PROBABILITY
+**TOP TEAMS BY CHAMPION PROBABILITY**
 
-Spain        22.5%  
-Argentina    21.0%  
-Colombia      9.4%  
-France        6.9%  
-England       6.8%  
+| Team | Champion |
+|-----|-----|
+| Spain | 22.5% |
+| Argentina | 21.0% |
+| Colombia | 9.4% |
+| France | 9.4% |
+| England | 6.8% | 
 
 Simulation artifacts are exported to:
 
@@ -368,12 +372,12 @@ Simulation artifacts are exported to:
 
 Example outputs:
 
-- team_probabilities.csv  
-- champion_distribution.csv  
-- match_logs.parquet  
-- summary_metadata.json  
+- `team_probabilities.csv`
+- `champion_distribution.csv` 
+- `match_logs.parquet`
+- `summary_metadata.json`  
 
-## New Tournement (2026)
+## New Tournament (2026)
 
 The full tournament simulation can be executed from the command line using the simulation pipeline.
 
