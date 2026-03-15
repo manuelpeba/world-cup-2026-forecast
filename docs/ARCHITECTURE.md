@@ -154,7 +154,7 @@ The system runs thousands of simulated tournaments.
 
 Typical runs:
 
-10,000 -- 100,000 simulations
+10,000  --  100,000 simulations
 
 Each simulation produces:
 

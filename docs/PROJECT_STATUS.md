@@ -245,7 +245,7 @@ Tasks:
 -   archive early notebooks
 -   remove temporary artifacts
 
-Goal: maintain a clean production-style repository.
+Goal:  maintain a clean production-style repository.
 
 ------------------------------------------------------------------------
 
