@@ -19,7 +19,7 @@ The system is inspired by forecasting methodologies used by
 organizations such as **FiveThirtyEight, Opta, and sports betting
 analytics teams**.
 
-------------------------------------------------------------------------
+---
 
 # 🧠 Project Objective
 
@@ -35,7 +35,7 @@ Estimate the probability that each national team:
 This is achieved by **simulating thousands of complete tournaments**
 using a trained match outcome model.
 
-------------------------------------------------------------------------
+---
 
 # 🏗 System Architecture
 
@@ -60,7 +60,7 @@ forecast outputs
 The system separates **modeling, simulation, and reporting** components
 to maintain a clean and extensible architecture.
 
-------------------------------------------------------------------------
+---
 
 # 🧩 Forecasting System Architecture
 
@@ -91,7 +91,7 @@ O --> P[Streamlit Dashboard]
 The architecture follows a **production-style separation between data
 processing, predictive modeling, simulation, and reporting layers**.
 
-------------------------------------------------------------------------
+---
 
 # ⚙ Tournament Simulation Flow
 
@@ -114,32 +114,21 @@ M --> N[Team Advancement Probabilities]
 M --> O[Champion Probability Distribution]
 ```
 
-------------------------------------------------------------------------
+---
 
 # 🧠 Component Responsibilities
 
-  -----------------------------------------------------------------------
-  Component                   Responsibility
-  --------------------------- -------------------------------------------
-  Data ingestion              Load historical international match results
+| Component | Responsibility |
+|---|---|
+| Data ingestion | Load historical international match results |
+| Feature engineering | Build Elo and rolling performance features |
+| Match outcome model | Predict win/draw/loss probabilities |
+| Simulation engine | Simulate tournaments using probabilistic match outcomes |
+| Aggregation layer | Convert simulation results into advancement probabilities |
+| Reporting layer | Export artifacts and power dashboard visualizations |
+| Dashboard | Interactive exploration of forecast results |
 
-  Feature engineering         Build Elo and rolling performance features
-
-  Match outcome model         Predict win/draw/loss probabilities
-
-  Simulation engine           Simulate tournaments using probabilistic
-                              match outcomes
-
-  Aggregation layer           Convert simulation results into advancement
-                              probabilities
-
-  Reporting layer             Export artifacts and power dashboard
-                              visualizations
-
-  Dashboard                   Interactive exploration of forecast results
-  -----------------------------------------------------------------------
-
-------------------------------------------------------------------------
+---
 
 # ⚙ Simulation Engine Internals
 
@@ -163,7 +152,7 @@ Key outputs include:
 -   simulated match logs
 -   simulation metadata
 
-------------------------------------------------------------------------
+---
 
 # 📊 Data Pipeline
 
@@ -197,7 +186,7 @@ These features represent current team strength and are stored in:
 
 This snapshot is used as the starting point for tournament simulation.
 
-------------------------------------------------------------------------
+---
 
 # 🤖 Match Outcome Model
 
@@ -227,7 +216,7 @@ Examples include:
 The model outputs probability distributions that feed directly into the
 simulation engine.
 
-------------------------------------------------------------------------
+---
 
 # 🎲 Tournament Simulation Engine
 
@@ -254,7 +243,7 @@ Each simulation generates:
 -   finalists
 -   champion
 
-------------------------------------------------------------------------
+---
 
 # 🏆 Monte Carlo Forecasting
 
@@ -268,24 +257,21 @@ Simulation outputs are aggregated into probabilities.
 
 ### Example Forecast Output
 
-  --------------------------------------------------------------------------------------
-  Team        Advance from     Round of 16 Quarterfinal   Semifinal   Final   Champion
-              Group                                                           
-  ----------- ---------------- ----------- -------------- ----------- ------- ----------
-  Spain       88.8%            57.7%       43.0%          33.4%       23.1%   23.1%
+| Team | Advance from Group | Round of 16 | Quarterfinal | Semifinal | Final | Champion |
+|---|---:|---:|---:|---:|---:|---:|
+| Spain | 88.8% | 57.7% | 43.0% | 33.4% | 23.1% | 23.1% |
+| Argentina | 88.5% | 56.8% | 41.2% | 30.7% | 20.8% | 20.8% |
+| France | 85.2% | 52.3% | 37.5% | 26.9% | 15.6% | 9.4% |
 
-  Argentina   88.5%            56.8%       41.2%          30.7%       20.8%   20.8%
-
-  France      85.2%            52.3%       37.5%          26.9%       15.6%   9.4%
-  --------------------------------------------------------------------------------------
 
 These probabilities are produced by aggregating thousands of simulated
 tournaments.
 
-------------------------------------------------------------------------
+---
 
 # 📁 Project Structure
 
+```bash
     world-cup-2026-forecast
     │
     ├── app
@@ -319,8 +305,9 @@ tournaments.
     ├── pyproject.toml
     ├── requirements.txt
     └── README.md
+```
 
-------------------------------------------------------------------------
+---
 
 # ▶ Running the Simulation
 
@@ -344,14 +331,13 @@ py -m src.simulation.run_simulation \
 
 ### Parameters
 
-  Parameter               Description
-  ----------------------- ----------------------------------------------
-  --groups-path           JSON group stage configuration
-  --bracket-config-path   Knockout bracket configuration
-  --num-simulations       Number of Monte Carlo tournament simulations
-  --simulation-format     v1 (32 teams) or v2 (48 teams)
+| Parameter | Description |
+|---|---|
+| `--groups-path` | JSON group stage configuration |
+| `--bracket-config-path` | Knockout bracket configuration |
+| `--num-simulations` | Number of Monte Carlo tournament simulations |
+| `--simulation-format` | `v1` (32 teams) or `v2` (48 teams) |
 
-------------------------------------------------------------------------
 
 # 📦 Simulation Outputs
 
@@ -368,7 +354,7 @@ Generated files:
 
 These artifacts are later consumed by the **Streamlit dashboard**.
 
-------------------------------------------------------------------------
+---
 
 # 📈 Dashboard
 
@@ -389,20 +375,21 @@ The dashboard provides:
 -   probability charts
 -   simulation match logs
 
-------------------------------------------------------------------------
+----
 
 # 📓 Research Notebooks
 
 The project includes research notebooks used during development.
 
-  Notebook                            Purpose
-  ----------------------------------- ---------------------------
-  00_eda_match_dataset.ipynb          Exploratory data analysis
-  01_match_model_experiments.ipynb    Model experimentation
-  02_simulation_analysis.ipynb        Simulation analysis
-  03_world_cup_forecast_story.ipynb   Forecast storytelling
+| Notebook | Purpose |
+|---|---|
+| `00_eda_match_dataset.ipynb` | Exploratory data analysis |
+| `01_match_model_experiments.ipynb` | Model experimentation |
+| `02_simulation_analysis.ipynb` | Simulation analysis |
+| `03_world_cup_forecast_story.ipynb` | Forecast storytelling |
 
-------------------------------------------------------------------------
+
+---
 
 # ⚠ Current Limitations
 
@@ -419,7 +406,7 @@ Future improvement: **Poisson goal model**
 Draws in knockout rounds are resolved using simplified rules rather than
 modeling extra time.
 
-------------------------------------------------------------------------
+---
 
 # 🚀 Future Improvements
 
@@ -431,7 +418,7 @@ Potential extensions include:
 -   scenario simulations (injuries, squad changes)
 -   distributed simulation engine
 
-------------------------------------------------------------------------
+---
 
 # 🎯 Why This Project
 
@@ -451,7 +438,18 @@ These techniques are directly applicable to:
 -   betting analytics teams
 -   performance analysis groups
 
-------------------------------------------------------------------------
+## Skills Demonstrated
+
+| Area | What the project shows |
+|---|---|
+| Data Engineering | Structured ingestion, feature pipelines, reproducible outputs |
+| Machine Learning | Probabilistic classification for football match outcomes |
+| Simulation | Monte Carlo tournament engine with configurable formats |
+| Analytics Engineering | Aggregation layers, artifact exports, forecast tables |
+| Product Thinking | Interactive Streamlit dashboard for stakeholder exploration |
+| Sports Analytics | Football-specific modeling, tournament logic, forecasting use cases |
+
+---
 
 # 👤 Author
 
@@ -459,7 +457,7 @@ Manuel Pérez Bañuls\
 Data Scientist focused on **football analytics, predictive modeling, and
 performance analysis**.
 
-------------------------------------------------------------------------
+---
 
 # 📜 License
 
