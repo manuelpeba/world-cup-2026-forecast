@@ -475,12 +475,17 @@ Frequency distribution of tournament winners across all simulations.
 
 Explore the analysis without cloning the repository:
 
+# 🔗 Notebooks & Analysis
+
+Explore the analysis without cloning the repository:
+
 | Notebook | Purpose | Contents |
 |----------|---------|----------|
 | [00_eda_match_dataset.ipynb](notebooks/00_eda_match_dataset.ipynb) | Exploratory Data Analysis | Match statistics, historical trends |
-| [01_match_model_experiments.ipynb](notebooks/01_match_model_experiments.ipynb) | Model Experimentation | Feature importance, model comparison |
+| [01_match_model_experiments.ipynb](experiments/01_match_model_experiments.ipynb) | Model Experimentation | Feature importance, model comparison |
 | [02_simulation_analysis.ipynb](notebooks/02_simulation_analysis.ipynb) | Simulation Results Analysis | Probability distributions, team insights |
 | [03_world_cup_forecast_story.ipynb](notebooks/03_world_cup_forecast_story.ipynb) | Forecast Narrative | Tournament predictions, storytelling |
+| [05_match_model_benchmark.ipynb](experiments/05_match_model_benchmark.ipynb) | Model Benchmarking | Probabilistic model comparison, calibration analysis, baseline evaluation |
 
 ---
 

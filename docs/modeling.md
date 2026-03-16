@@ -12,7 +12,7 @@ team_a_win draw team_a_loss
 These probabilities are used as inputs for the tournament simulation
 engine.
 
-------------------------------------------------------------------------
+---
 
 ## Modeling Role in the Forecasting System
 
@@ -43,7 +43,7 @@ Typical sources include:
 Matches span multiple decades to capture long-term team performance
 trends.
 
-------------------------------------------------------------------------
+---
 
 # Feature Engineering
 
@@ -59,7 +59,7 @@ team_a_elo_before team_b_elo_before elo_diff abs_elo_diff
 Elo captures long-term team strength and has strong predictive power in
 football.
 
-------------------------------------------------------------------------
+---
 
 ## Rolling Performance Metrics
 
@@ -70,7 +70,7 @@ rolling_win_rate rolling_points
 
 These capture short-term form and performance trends.
 
-------------------------------------------------------------------------
+---
 
 ## Derived Features
 
@@ -81,7 +81,7 @@ rolling_goals_scored_diff rolling_goals_conceded_diff
 
 These represent relative advantages between teams.
 
-------------------------------------------------------------------------
+---
 
 ## Elo-Based Expected Result
 
@@ -91,7 +91,7 @@ expected_result = 1 / (1 + 10\^((elo_opponent - elo_team) / 400))
 
 This approximates the expected win probability under Elo assumptions.
 
-------------------------------------------------------------------------
+---
 
 # Model Architecture
 
@@ -107,7 +107,7 @@ win draw loss
 
 The model is trained on engineered match-level features.
 
-------------------------------------------------------------------------
+---
 
 # Training Strategy
 
@@ -121,7 +121,7 @@ Example split:
 
 Train: historical matches up to 2017 Test: recent matches
 
-------------------------------------------------------------------------
+---
 
 # Model Output
 
@@ -137,7 +137,7 @@ Spain vs Brazil
 
 win = 0.42 draw = 0.29 loss = 0.29
 
-------------------------------------------------------------------------
+---
 
 # Integration with Tournament Simulation
 
@@ -153,7 +153,7 @@ sample from categorical distribution: \[win, draw, loss\]
 
 This allows stochastic tournament simulations.
 
-------------------------------------------------------------------------
+---
 
 # Knockout Draw Resolution
 
@@ -169,7 +169,7 @@ Current options:
 
 The Elo-weighted method biases penalties toward stronger teams.
 
-------------------------------------------------------------------------
+---
 
 # Why Monte Carlo Simulation?
 
@@ -186,7 +186,7 @@ Typical runs:
 
 10,000 -- 100,000 simulations
 
-------------------------------------------------------------------------
+---
 
 # Interpretation of Results
 
@@ -198,7 +198,7 @@ Tournament probabilities reflect both:
 Two equally strong teams may have different championship probabilities
 depending on their path through the bracket.
 
-------------------------------------------------------------------------
+---
 
 # Current Modeling Limitations
 
@@ -215,7 +215,7 @@ Therefore:
 -   match scores are not simulated
 -   tie-breakers rely on heuristics
 
-------------------------------------------------------------------------
+---
 
 # Potential Modeling Improvements
 
@@ -242,7 +242,23 @@ Combining:
 
 Elo xG models ML classifiers
 
-------------------------------------------------------------------------
+---
+
+### Model Benchmarking
+
+Candidate models were evaluated using a dedicated benchmark experiment:
+
+`experiments/05_match_model_benchmark.ipynb`
+
+The experiment compared Logistic Regression, Gradient Boosting and Random Forest using probabilistic metrics:
+
+- Log Loss
+- Brier Score
+- Calibration analysis
+
+After removing features that introduced data leakage, Logistic Regression achieved the best probabilistic performance and was selected for the production forecasting pipeline.
+
+---
 
 # Summary
 

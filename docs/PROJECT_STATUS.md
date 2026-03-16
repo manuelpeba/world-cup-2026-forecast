@@ -155,6 +155,14 @@ src/simulation/
 -   qualification.py
 -   tournament.py
 
+### Match Outcome Modeling
+
+- Logistic Regression baseline implemented
+- Feature engineering using Elo ratings and rolling team statistics
+- Model benchmarking experiment completed (`experiments/05_match_model_benchmark.ipynb`)
+- Data leakage detected and removed (goals and post-match Elo features)
+- Final model selected based on probabilistic metrics
+
 ---
 
 # 5. Simulation Outputs
