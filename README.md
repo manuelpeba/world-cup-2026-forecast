@@ -73,7 +73,7 @@ probability distributions rather than deterministic predictions.
 | **Machine Learning** | scikit-learn (Logistic Regression) |
 | **Simulation Engine** | Custom probabilistic Monte Carlo |
 | **Data Formats** | Parquet, CSV, JSON |
-| **Visualization** | Streamlit, matplotlib/plotly |
+| **Visualization** | Streamlit, matplotlib/plotly, seaborn |
 | **Configuration** | YAML (configs/) |
 | **Versioning** | joblib (model persistence) |
 
@@ -470,10 +470,6 @@ Frequency distribution of tournament winners across all simulations.
 ```
 
 ---
-
-# 🔗 Notebooks & Analysis
-
-Explore the analysis without cloning the repository:
 
 # 🔗 Notebooks & Analysis
 
