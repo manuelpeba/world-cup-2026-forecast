@@ -40,7 +40,7 @@ probability distributions rather than deterministic predictions.
 
 | Metric | Value |
 |--------|-------|
-| **Model Accuracy** | Baseline logistic regression on historical data |
+| **Model** | Multiclass Logistic Regression (benchmark-validated baseline) |
 | **Dataset Size** | ~31,000 international matches (1994–2024) |
 | **Probability Calibration** | Temporal train/test split methodology |
 | **Simulation Scale** | 10,000–100,000 Monte Carlo tournaments |
@@ -292,6 +292,12 @@ The model was evaluated using a **temporal train/test split** approach to avoid 
 ## Validation Approach
 
 The logistic regression model serves as a **baseline probabilistic predictor** for the simulation engine. Model predictions feed directly into Monte Carlo simulations, making calibration quality critical.
+
+Additional experiments evaluated probability calibration using
+`CalibratedClassifierCV`. The calibrated model did not improve log loss
+or Brier score compared to the baseline Logistic Regression model,
+indicating that the original model already provides well-calibrated
+probability estimates for this dataset.
 
 ## Model Benchmark
 
@@ -564,7 +570,7 @@ A: Ensure:
 ## Modeling
 
 -   Poisson goal model
--   Probability calibration
+-   Advanced probability calibration techniques
 -   Ensemble models
 
 ## Simulation
