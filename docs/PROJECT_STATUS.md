@@ -10,6 +10,24 @@ using probabilistic modeling and Monte Carlo simulation.
 
 ---
 
+# Current Status
+
+The core forecasting framework is fully implemented.
+
+Completed components:
+
+- Match outcome prediction model
+- Tournament simulation engine
+- Monte Carlo simulation pipeline
+- Analytical notebooks for simulation interpretation
+- Forecast storytelling notebook
+- Streamlit dashboard for interactive visualization
+- Project documentation and repository structure
+
+The project now provides a complete pipeline from raw data to tournament forecasts and analytical insights.
+
+---
+
 # 1. Project Overview
 
 The system estimates the probability that each national team:
@@ -176,7 +194,7 @@ Features:
 
 Update:
 
-configs/world_cup_groups_48.json
+`configs/world_cup_groups_48.json`
 
 with official teams once qualification and group draw are finalized.
 
@@ -251,19 +269,41 @@ Goal:  maintain a clean production-style repository.
 
 # 10. Analytical notebooks
 
-Status: Completed
+The analytical notebook layer has been completed and includes:
 
-The repository includes three notebooks used for exploratory analysis and communication:
+- **00_eda_match_dataset.ipynb** — exploratory analysis of the historical match dataset
+- **02_simulation_analysis.ipynb** — analysis of Monte Carlo simulation outputs and team progression probabilities
+- **03_world_cup_forecast_story.ipynb** — narrative forecast of the FIFA World Cup 2026
 
-- Match model experiments
-- Tournament simulation analysis
-- Forecast storytelling and interpretation
-
-These notebooks complement the production pipeline by providing transparency into model behavior and tournament forecast structure.
+These notebooks provide transparency into the forecasting process and help communicate model insights and simulation results.
 
 ---
 
-# 11. Long-Term Extensions
+# 11. Research Experiments
+
+Early modeling experiments are stored in the `experiments/` directory.
+
+- **01_match_model_experiments.ipynb** — exploratory experimentation with match outcome models and feature configurations.
+
+This separation keeps exploratory work isolated from the production forecasting pipeline.
+
+---
+
+# 12. Documentation
+
+Project documentation now includes:
+
+- Architecture overview (`docs/architecture.md`)
+- Engineering notes (`docs/engineering.md`)
+- Modeling documentation (`docs/modeling.md`)
+- Project status (`docs/project_status.md`)
+- Visual documentation assets (`docs/images/`)
+
+The main project README also includes simulation visualizations generated from the analytical notebooks.
+
+---
+
+# 13. Long-Term Extensions
 
 -   player-level impact models
 -   expected goals (xG) features

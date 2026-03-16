@@ -356,39 +356,47 @@ tournaments.
 # 📁 Project Structure
 
 ```bash
-    world-cup-2026-forecast
-    │
-    ├── app
-    │   └── streamlit_app.py
-    │
-    ├── configs
-    │
-    ├── data
-    │   ├── raw
-    │   ├── external
-    │   ├── interim
-    │   ├── processed
-    │   └── outputs
-    │
-    ├── docs
-    │
-    ├── notebooks
-    │
-    ├── src
-    │   ├── dashboard
-    │   ├── evaluation
-    │   ├── features
-    │   ├── ingestion
-    │   ├── models
-    │   ├── pipelines
-    │   ├── simulation
-    │   └── utils
-    │
-    ├── tests
-    │
-    ├── pyproject.toml
-    ├── requirements.txt
-    └── README.md
+world-cup-2026-forecast
+│
+├── app/                        # Streamlit dashboard for forecast visualization
+│
+├── configs/                    # Simulation configuration files
+│
+├── data/
+│   ├── external/               # External raw datasets
+│   ├── raw/                    # Raw match datasets
+│   ├── interim/                # Intermediate processed datasets
+│   ├── processed/              # Clean modeling datasets
+│   └── outputs/
+│       └── simulation/         # Simulation outputs (team probabilities, match logs, etc.)
+│
+├── docs/                       # Technical documentation
+│   ├── architecture.md
+│   ├── engineering.md
+│   ├── modeling.md
+│   ├── project_status.md
+│   └── images/                 # Visual assets used in README and documentation
+│
+├── experiments/                # Research and model experimentation notebooks
+│   └── 01_match_model_experiments.ipynb
+│
+├── notebooks/                  # Analytical and storytelling notebooks
+│   ├── 00_eda_match_dataset.ipynb
+│   ├── 02_simulation_analysis.ipynb
+│   ├── 03_world_cup_forecast_story.ipynb
+│   └── README.md
+│
+├── src/                        # Production forecasting pipeline
+│   ├── models/                 # Match outcome prediction models
+│   ├── simulation/             # Tournament simulation engine
+│   └── utils/                  # Utility modules
+│
+├── tests/                      # Unit tests
+│
+├── .env.example                # Environment configuration template
+├── pyproject.toml              # Project configuration
+├── requirements.txt            # Python dependencies
+└── README.md                   # Project overview
 ```
 
 ---
@@ -460,34 +468,48 @@ The dashboard provides:
 -   simulation match logs
 
 ----
+## 📓 Research and Analytical Notebooks
 
-# 📓 Research Notebooks
+The repository includes several notebooks used during the development and analysis of the forecasting framework.  
+These notebooks are intended for **exploration, validation, and communication of results** and are not part of the production pipeline.
 
-The project includes research notebooks used during development.
+### Research Experiments
+
+Research-oriented experiments are stored in the `experiments/` directory.
 
 | Notebook | Purpose |
-|---|---|
-| `00_eda_match_dataset.ipynb` | Exploratory data analysis |
-| `01_match_model_experiments.ipynb` | Model experimentation |
-| `02_simulation_analysis.ipynb` | Simulation analysis |
-| `03_world_cup_forecast_story.ipynb` | Forecast storytelling |
+|--------|--------|
+| `01_match_model_experiments.ipynb` | Exploratory experimentation with match outcome models and feature configurations |
+
+These notebooks were used to test modeling ideas before integrating finalized approaches into the production codebase.
 
 ---
 
-## Analytical Notebooks
+### Analytical Notebooks
 
-The repository includes several exploratory notebooks used to analyze the model and simulation outputs.
+The `notebooks/` directory contains analysis and storytelling notebooks built on top of the production simulation pipeline.
 
-- **01_match_model_experiments.ipynb**  
-  Evaluates match outcome models and compares baseline approaches.
+| Notebook | Purpose |
+|--------|--------|
+| `00_eda_match_dataset.ipynb` | Exploratory analysis of the historical football match dataset |
+| `02_simulation_analysis.ipynb` | Analysis of Monte Carlo simulation outputs and team progression probabilities |
+| `03_world_cup_forecast_story.ipynb` | Narrative forecast of the FIFA World Cup 2026 highlighting contenders and tournament uncertainty |
 
-- **02_simulation_analysis.ipynb**  
-  Analyzes the outputs of the tournament simulation, including team progression probabilities and championship distributions.
+These notebooks help interpret the model outputs and provide transparency into how tournament forecasts are generated.
 
-- **03_world_cup_forecast_story.ipynb**  
-  Presents the simulation results as a narrative forecast of the FIFA World Cup 2026, highlighting contenders, dark horses, and tournament uncertainty.
+---
 
-These notebooks are not part of the production pipeline but provide transparency and analytical insight into the forecasting framework.
+### Relationship to the Production Pipeline
+
+The repository separates **research, analysis, and production code**:
+
+| Directory | Purpose |
+|----------|--------|
+| `experiments/` | Research and model experimentation |
+| `notebooks/` | Analytical and storytelling notebooks |
+| `src/` | Production forecasting and simulation pipeline |
+
+This separation ensures that the production system remains stable while allowing ongoing experimentation and analysis.
 
 ---
 
