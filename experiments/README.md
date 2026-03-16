@@ -33,6 +33,24 @@ Insights from this notebook informed the development of the production model loc
 
 ---
 
+### 05_match_model_benchmark.ipynb
+
+Benchmark notebook used to evaluate and compare probabilistic models for football match outcome prediction.
+
+The experiment focuses on selecting the most reliable model for use in the **World Cup simulation engine**.
+
+Topics covered include:
+
+- Comparison of Logistic Regression, Gradient Boosting and Random Forest
+- Evaluation using probabilistic metrics (Log Loss and Brier Score)
+- Calibration analysis of predicted probabilities
+- Detection and removal of feature leakage
+- Comparison against a naïve baseline model
+
+The benchmark confirmed that **Logistic Regression provides the best probabilistic performance** for this dataset and is therefore used in the tournament simulation pipeline.
+
+---
+
 ## Relationship to the Production Pipeline
 
 The repository separates **research code** from **production code**:
