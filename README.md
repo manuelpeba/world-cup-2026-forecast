@@ -293,6 +293,15 @@ The model was evaluated using a **temporal train/test split** approach to avoid 
 
 The logistic regression model serves as a **baseline probabilistic predictor** for the simulation engine. Model predictions feed directly into Monte Carlo simulations, making calibration quality critical.
 
+## Model Benchmark
+
+The match prediction model was selected after evaluating multiple
+candidate approaches using probabilistic forecasting metrics.
+
+See:
+`experiments/05_match_model_benchmark.ipynb`
+`docs/modeling.md`
+
 ---
 
 # 🎲 Tournament Simulation Engine

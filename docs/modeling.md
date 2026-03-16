@@ -260,6 +260,126 @@ After removing features that introduced data leakage, Logistic Regression achiev
 
 ---
 
+# Model Benchmarking Results
+
+The benchmark experiment evaluated candidate models using a temporal
+holdout dataset to ensure realistic forecasting conditions.
+
+Evaluation metrics focused on **probabilistic prediction quality**, which
+is critical for tournament simulation.
+
+Primary metrics:
+
+* Log Loss
+* Multiclass Brier Score
+* Classification Accuracy
+
+Lower values of Log Loss and Brier Score indicate better calibrated
+probabilities.
+
+---
+
+## Evaluation Results
+
+Results obtained on the test set:
+
+| Metric      | Logistic Regression | Logistic Regression (Calibrated) | Random Forest |
+| ----------- | ------------------- | -------------------------------- | ------------- |
+| Accuracy    | **59.96%**          | 59.92%                           | 57.33%        |
+| Log Loss    | **0.8731**          | 0.8816                           | 0.8950        |
+| Brier Score | **0.5149**          | 0.5186                           | 0.5295        |
+
+---
+
+## Interpretation
+
+### Logistic Regression
+
+Logistic Regression achieved the best overall performance across
+probabilistic metrics.
+
+Key advantages:
+
+* lowest Log Loss
+* lowest Brier Score
+* stable probability calibration
+* fast inference suitable for large-scale Monte Carlo simulations
+
+Because the forecasting system relies on **accurate probability
+distributions rather than pure classification accuracy**, Logistic
+Regression is the preferred model.
+
+---
+
+### Logistic Regression with Explicit Calibration
+
+An additional experiment applied probability calibration using
+`CalibratedClassifierCV`.
+
+Calibration methods can sometimes improve probability estimates, but in
+this case results showed **no improvement**.
+
+The calibrated model produced slightly worse metrics:
+
+* higher Log Loss
+* higher Brier Score
+* nearly identical accuracy
+
+This suggests that the base Logistic Regression model already provides
+well-calibrated probabilities for this dataset.
+
+---
+
+### Random Forest
+
+Random Forest produced lower classification accuracy and worse
+probabilistic metrics compared to Logistic Regression.
+
+Tree-based models can achieve strong classification performance but may
+produce poorly calibrated probabilities without extensive tuning.
+
+Given the importance of probability quality for simulation-based
+forecasting, Random Forest was not selected.
+
+---
+
+## Model Selection Decision
+
+Based on the benchmark results:
+
+**Logistic Regression was selected as the production match prediction
+model.**
+
+Selection criteria:
+
+* best probabilistic performance
+* naturally calibrated probabilities
+* computational efficiency
+* model stability
+
+The calibrated variant and Random Forest remain documented as evaluated
+alternatives.
+
+---
+
+## Role of the Benchmark Experiment
+
+The benchmark notebook:
+
+`experiments/05_match_model_benchmark.ipynb`
+
+serves several purposes:
+
+* validate model assumptions
+* compare candidate modeling approaches
+* confirm probability calibration
+* justify model selection decisions
+
+This experiment ensures that the production forecasting pipeline is
+based on the **most reliable probabilistic model available**.
+
+---
+
 # Summary
 
 The modeling layer provides probabilistic match outcomes that feed the

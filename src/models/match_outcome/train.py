@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
@@ -17,7 +18,7 @@ from sklearn.metrics import (
     log_loss,
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, OneHotEncoder, StandardScaler
 
 from src.utils.config import ARTIFACTS_DIR, PROCESSED_DATA_DIR
 
@@ -51,23 +52,6 @@ NUMERIC_FEATURES = [
 CATEGORICAL_FEATURES = [
     "tournament",
     "neutral_venue",
-]
-
-DROP_COLUMNS = [
-    "date",
-    "team_a",
-    "team_b",
-    "goals_a",
-    "goals_b",
-    "country",
-    "city",
-    "year",
-    "team_a_elo_after",
-    "team_b_elo_after",
-    "team_a_opponent_elo_before",
-    "team_b_opponent_elo_before",
-    "match_k_factor_b",
-    "match_goal_diff_multiplier_b",
 ]
 
 
@@ -118,10 +102,7 @@ def build_preprocessor() -> ColumnTransformer:
     categorical_transformer = Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="most_frequent")),
-            (
-                "onehot",
-                OneHotEncoder(handle_unknown="ignore"),
-            ),
+            ("onehot", OneHotEncoder(handle_unknown="ignore")),
         ]
     )
 
@@ -135,9 +116,8 @@ def build_preprocessor() -> ColumnTransformer:
     return preprocessor
 
 
-def build_models(preprocessor: ColumnTransformer) -> Dict[str, Pipeline]:
+def build_models(preprocessor: ColumnTransformer) -> Dict[str, Any]:
     """Build candidate ML pipelines."""
-
     logistic_pipeline = Pipeline(
         steps=[
             ("preprocessor", preprocessor),
@@ -151,6 +131,25 @@ def build_models(preprocessor: ColumnTransformer) -> Dict[str, Pipeline]:
                 ),
             ),
         ]
+    )
+
+    logistic_calibrated = CalibratedClassifierCV(
+        estimator=Pipeline(
+            steps=[
+                ("preprocessor", preprocessor),
+                (
+                    "model",
+                    LogisticRegression(
+                        max_iter=2000,
+                        solver="lbfgs",
+                        class_weight=None,
+                        random_state=42,
+                    ),
+                ),
+            ]
+        ),
+        method="isotonic",
+        cv=3,
     )
 
     random_forest_pipeline = Pipeline(
@@ -173,38 +172,41 @@ def build_models(preprocessor: ColumnTransformer) -> Dict[str, Pipeline]:
 
     return {
         "logistic_regression": logistic_pipeline,
+        "logistic_regression_calibrated": logistic_calibrated,
         "random_forest": random_forest_pipeline,
     }
 
 
-def multiclass_brier_score(y_true: np.ndarray, y_prob: np.ndarray, n_classes: int) -> float:
+def multiclass_brier_score(
+    y_true: np.ndarray,
+    y_prob: np.ndarray,
+    n_classes: int,
+) -> float:
     """
     Compute multiclass Brier score.
     Lower is better.
     """
     y_true_one_hot = np.eye(n_classes)[y_true]
-    return np.mean(np.sum((y_prob - y_true_one_hot) ** 2, axis=1))
+    return float(np.mean(np.sum((y_prob - y_true_one_hot) ** 2, axis=1)))
 
 
 def evaluate_model(
-    model: Pipeline,
+    model: Any,
     X_test: pd.DataFrame,
     y_test: np.ndarray,
     class_names: List[str],
 ) -> Tuple[dict, np.ndarray, np.ndarray]:
     """Evaluate model on test set."""
-    y_pred = model.predict(X_test)
-    y_prob = model.predict_proba(X_test)
+    y_pred = np.asarray(model.predict(X_test))
+    y_prob = np.asarray(model.predict_proba(X_test))
 
     metrics = {
         "accuracy": float(accuracy_score(y_test, y_pred)),
         "log_loss": float(log_loss(y_test, y_prob)),
-        "brier_score_multiclass": float(
-            multiclass_brier_score(
-                y_true=y_test,
-                y_prob=y_prob,
-                n_classes=len(class_names),
-            )
+        "brier_score_multiclass": multiclass_brier_score(
+            y_true=y_test,
+            y_prob=y_prob,
+            n_classes=len(class_names),
         ),
         "classification_report": classification_report(
             y_test,
@@ -253,11 +255,11 @@ def save_predictions(
 ) -> None:
     """Save test predictions for later analysis."""
     pred_df = X_test.copy()
-    pred_df["y_true"] = label_encoder.inverse_transform(y_test)
-    pred_df["y_pred"] = label_encoder.inverse_transform(y_pred)
+    pred_df["y_true"] = label_encoder.inverse_transform(np.asarray(y_test))
+    pred_df["y_pred"] = label_encoder.inverse_transform(np.asarray(y_pred))
 
     for idx, class_name in enumerate(label_encoder.classes_):
-        pred_df[f"proba_{class_name}"] = y_prob[:, idx]
+        pred_df[f"proba_{class_name}"] = np.asarray(y_prob)[:, idx]
 
     output_path = ARTIFACTS_DIR / "metrics" / f"{model_name}_test_predictions.parquet"
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -288,8 +290,8 @@ def train_and_evaluate() -> None:
     y_test_raw = test_df[TARGET_COL].copy()
 
     label_encoder = LabelEncoder()
-    y_train = label_encoder.fit_transform(y_train_raw)
-    y_test = label_encoder.transform(y_test_raw)
+    y_train = np.asarray(label_encoder.fit_transform(y_train_raw))
+    y_test = np.asarray(label_encoder.transform(y_test_raw))
 
     print(f"Target classes: {list(label_encoder.classes_)}")
     print(f"Numeric features ({len(NUMERIC_FEATURES)}): {NUMERIC_FEATURES}")
