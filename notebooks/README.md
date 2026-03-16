@@ -8,6 +8,7 @@ The production pipeline lives under `src/` and should be executed through the CL
 ## Notebook Overview
 
 ### 00_eda_match_dataset.ipynb
+
 Exploratory data analysis of the historical international match dataset used to build the modeling features.
 
 Focus areas include:
@@ -17,15 +18,20 @@ Focus areas include:
 - feature sanity checks
 
 ### 01_match_model_experiments.ipynb
+
 Research notebook for match outcome modeling experiments.
 
 Includes:
-- feature validation
+
+- dataset inspection and feature validation
+- temporal train/test evaluation
+- baseline multinomial logistic regression model
 - candidate model comparisons
-- calibration diagnostics
-- evaluation metrics.
+- probability calibration diagnostics
+- evaluation metrics (accuracy, log loss)
 
 ### 02_simulation_analysis.ipynb
+
 Analysis of Monte Carlo tournament simulation outputs.
 
 Explores:
@@ -35,6 +41,7 @@ Explores:
 - simulation stability.
 
 ### 03_world_cup_forecast_story.ipynb
+
 Storytelling notebook presenting the main insights from the World Cup forecast.
 
 Designed for:
