@@ -388,6 +388,22 @@ The project includes research notebooks used during development.
 | `02_simulation_analysis.ipynb` | Simulation analysis |
 | `03_world_cup_forecast_story.ipynb` | Forecast storytelling |
 
+---
+
+## Analytical Notebooks
+
+The repository includes several exploratory notebooks used to analyze the model and simulation outputs.
+
+- **01_match_model_experiments.ipynb**  
+  Evaluates match outcome models and compares baseline approaches.
+
+- **02_simulation_analysis.ipynb**  
+  Analyzes the outputs of the tournament simulation, including team progression probabilities and championship distributions.
+
+- **03_world_cup_forecast_story.ipynb**  
+  Presents the simulation results as a narrative forecast of the FIFA World Cup 2026, highlighting contenders, dark horses, and tournament uncertainty.
+
+These notebooks are not part of the production pipeline but provide transparency and analytical insight into the forecasting framework.
 
 ---
 
