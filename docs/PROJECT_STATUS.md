@@ -8,7 +8,7 @@ The goal of the project is to build a **production-style sports
 analytics pipeline** capable of forecasting international tournaments
 using probabilistic modeling and Monte Carlo simulation.
 
-------------------------------------------------------------------------
+---
 
 # 1. Project Overview
 
@@ -29,26 +29,26 @@ This is achieved by combining:
 -   Monte Carlo forecasting
 -   analytics dashboards
 
-------------------------------------------------------------------------
+---
 
 # 2. Current Development Status
 
-  Component                           Status
-  ----------------------------------- ----------------------
-  Data ingestion pipeline             Complete
-  Feature engineering                 Complete
-  Team strength snapshot generation   Complete
-  Match prediction model              Baseline implemented
-  Tournament simulation engine        Complete
-  32-team tournament format           Complete
-  48-team World Cup format            Implemented
-  Monte Carlo simulation pipeline     Complete
-  Simulation artifact export          Complete
-  Streamlit dashboard                 Implemented
-  Research notebooks                  Complete
-  Project documentation               In progress
+| Component | Status |
+| --- | --- |
+| Data ingestion pipeline | Complete |
+| Feature engineering | Complete |
+| Team strength snapshot generation | Complete |
+| Match prediction model | Baseline implemented |
+| Tournament simulation engine | Complete |
+| 32-team tournament format | Complete |
+| 48-team World Cup format | Implemented |
+| Monte Carlo simulation pipeline | Complete |
+| Simulation artifact export | Complete |
+| Streamlit dashboard | Implemented |
+| Research notebooks | Complete |
+| Project documentation | In progress |
 
-------------------------------------------------------------------------
+---
 
 # 3. Completed Components
 
@@ -65,7 +65,7 @@ Primary feature snapshot:
 
 data/processed/latest_team_features.parquet
 
-------------------------------------------------------------------------
+---
 
 ## Match Outcome Model
 
@@ -88,7 +88,7 @@ Features include:
 
 Dataset size: \~31k historical international matches.
 
-------------------------------------------------------------------------
+---
 
 ## Tournament Simulation Engine
 
@@ -112,7 +112,7 @@ Each simulation generates:
 -   finalists
 -   champion
 
-------------------------------------------------------------------------
+---
 
 # 4. Tournament Format Support
 
@@ -137,7 +137,7 @@ src/simulation/
 -   qualification.py
 -   tournament.py
 
-------------------------------------------------------------------------
+---
 
 # 5. Simulation Outputs
 
@@ -152,7 +152,7 @@ Generated artifacts:
 -   match_logs.parquet
 -   summary_metadata.json
 
-------------------------------------------------------------------------
+---
 
 # 6. Dashboard
 
@@ -168,7 +168,7 @@ Features:
 -   match log preview
 -   simulation metadata display
 
-------------------------------------------------------------------------
+---
 
 # 7. Next Development Steps
 
@@ -180,7 +180,7 @@ configs/world_cup_groups_48.json
 
 with official teams once qualification and group draw are finalized.
 
-------------------------------------------------------------------------
+---
 
 ## Improve Match Prediction Model
 
@@ -199,7 +199,7 @@ Add:
 -   probability calibration
 -   cross-validation
 
-------------------------------------------------------------------------
+---
 
 ## Introduce Goal-Based Models
 
@@ -213,7 +213,7 @@ simulate scoreline\
 ↓\
 derive match result
 
-------------------------------------------------------------------------
+---
 
 ## Improve Dashboard
 
@@ -224,7 +224,7 @@ Planned visualizations:
 -   team comparison charts
 -   tournament bracket visualization
 
-------------------------------------------------------------------------
+---
 
 # 8. Documentation Tasks
 
@@ -232,9 +232,9 @@ Files to complete:
 
 docs/engineering_notes.md\
 docs/modeling_notes.md\
-docs/methodology.md
+docs/architecture.md
 
-------------------------------------------------------------------------
+---
 
 # 9. Repository Cleanup
 
@@ -247,9 +247,23 @@ Tasks:
 
 Goal:  maintain a clean production-style repository.
 
-------------------------------------------------------------------------
+---
 
-# 10. Long-Term Extensions
+# 10. Analytical notebooks
+
+Status: Completed
+
+The repository includes three notebooks used for exploratory analysis and communication:
+
+- Match model experiments
+- Tournament simulation analysis
+- Forecast storytelling and interpretation
+
+These notebooks complement the production pipeline by providing transparency into model behavior and tournament forecast structure.
+
+---
+
+# 11. Long-Term Extensions
 
 -   player-level impact models
 -   expected goals (xG) features
