@@ -139,8 +139,15 @@ Results shown are produced from **large-scale tournament simulations (10,000–1
 The forecasting pipeline follows a modular architecture:
 
 ```mermaid
-flowchart TD
-A[Historical Match Data] --> B[Feature Engineering] --> C[Match Outcome Model] --> D[predict_match(team_a, team_b)] --> E[Monte Carlo Tournament Simulation] --> F[N Simulated Tournaments] --> G[Probability Aggregation] --> H[Forecast Outputs]
+flowchart LR
+A[Historical Match Data] --> B[Feature Engineering]
+B --> C[Team Strength Features]
+C --> D[Match Outcome Model]
+D --> E[Match Prediction API]
+E --> F[Monte Carlo Simulation Engine]
+F --> G[Simulated Tournaments]
+G --> H[Aggregation Layer]
+H --> I[Forecast Outputs]
 ```
 
 The system separates **modeling, simulation, and reporting** components
