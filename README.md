@@ -1,5 +1,9 @@
 # ⚽ World Cup 2026 Forecasting Engine
 
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Status](https://img.shields.io/badge/Status-Active-green.svg)]()
+
 A production-style football forecasting system that combines **machine
 learning match prediction** with **Monte Carlo tournament simulation**
 to estimate advancement and championship probabilities for international
@@ -19,6 +23,56 @@ The system is inspired by forecasting methodologies used by
 organizations such as **FiveThirtyEight, Opta, and sports betting
 analytics teams**.
 
+## 📋 Table of Contents
+
+- [🧠 Project Objective](#-project-objective)
+- [🏗 System Architecture](#-system-architecture)
+- [🧩 Forecasting System Architecture](#-forecasting-system-architecture)
+- [⚙ Tournament Simulation Flow](#-tournament-simulation-flow)
+- [🧠 Component Responsibilities](#-component-responsibilities)
+- [⚙ Simulation Engine Internals](#-simulation-engine-internals)
+- [📊 Data Pipeline](#-data-pipeline)
+- [🤖 Match Outcome Model](#-match-outcome-model)
+- [🎲 Tournament Simulation Engine](#-tournament-simulation-engine)
+- [🏆 Monte Carlo Forecasting](#-monte-carlo-forecasting)
+- [📁 Project Structure](#-project-structure)
+- [▶ Running the Simulation](#-running-the-simulation)
+- [📦 Simulation Outputs](#-simulation-outputs)
+- [📈 Dashboard](#-dashboard)
+- [📓 Research Notebooks](#-research-notebooks)
+- [⚠ Current Limitations](#-current-limitations)
+- [🚀 Future Improvements](#-future-improvements)
+- [🎯 Why This Project](#-why-this-project)
+- [👤 Author](#-author)
+- [📜 License](#-license)
+
+---
+
+## 🚀 Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/world-cup-2026-forecast.git
+   cd world-cup-2026-forecast
+   ```
+
+2. **Set up environment**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Run a simulation**
+   ```bash
+   python -m src.simulation.run_simulation --num-simulations 1000
+   ```
+
+4. **Launch dashboard**
+   ```bash
+   streamlit run app/streamlit_app.py
+   ```
+
 ---
 
 # 🧠 Project Objective
@@ -34,6 +88,36 @@ Estimate the probability that each national team:
 
 This is achieved by **simulating thousands of complete tournaments**
 using a trained match outcome model.
+
+---
+
+## 🎥 Demo & Screenshots
+
+### Champion Probability Forecast
+
+Forecasted probability of winning the FIFA World Cup 2026 based on Monte Carlo simulation results.
+
+![Champion Probabilities](docs/images/champion_probabilities.png)
+
+---
+
+### Team Progression Probabilities
+
+Probability of each team reaching different stages of the tournament.
+
+![Team Progression](docs/images/team_progression.png)
+
+---
+
+### Champion Distribution
+
+Distribution of simulated tournament champions across all Monte Carlo runs.
+
+![Champion Distribution](docs/images/champion_distribution.png)
+
+---
+
+Results shown are produced from **large-scale tournament simulations (10,000–100,000 runs)** using the match prediction model and simulation engine.
 
 ---
 

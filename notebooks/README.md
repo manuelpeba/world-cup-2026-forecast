@@ -17,19 +17,6 @@ Focus areas include:
 - temporal coverage
 - feature sanity checks
 
-### 01_match_model_experiments.ipynb
-
-Research notebook for match outcome modeling experiments.
-
-Includes:
-
-- dataset inspection and feature validation
-- temporal train/test evaluation
-- baseline multinomial logistic regression model
-- candidate model comparisons
-- probability calibration diagnostics
-- evaluation metrics (accuracy, log loss)
-
 ### 02_simulation_analysis.ipynb
 
 Analyzes the outputs of the World Cup tournament simulation.
