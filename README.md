@@ -23,6 +23,16 @@ The system is inspired by forecasting methodologies used by
 organizations such as **FiveThirtyEight, Opta, and sports betting
 analytics teams**.
 
+## ⭐ Key Features
+
+- End-to-end sports forecasting pipeline
+- Modular tournament simulation engine
+- Probabilistic match outcome modeling
+- Large-scale Monte Carlo forecasting (10k–100k simulations)
+- Reproducible simulation artifacts
+- Interactive Streamlit dashboard
+- Research and experimentation environment
+
 ## 📋 Table of Contents
 
 - [🧠 Project Objective](#-project-objective)
@@ -39,7 +49,7 @@ analytics teams**.
 - [▶ Running the Simulation](#-running-the-simulation)
 - [📦 Simulation Outputs](#-simulation-outputs)
 - [📈 Dashboard](#-dashboard)
-- [📓 Research Notebooks](#-research-notebooks)
+- [� Docs & Reproducibility](#-docs--reproducibility)
 - [⚠ Current Limitations](#-current-limitations)
 - [🚀 Future Improvements](#-future-improvements)
 - [🎯 Why This Project](#-why-this-project)
@@ -75,7 +85,7 @@ analytics teams**.
 
 ---
 
-# 🧠 Project Objective
+## 🧠 Project Objective
 
 Estimate the probability that each national team:
 
@@ -92,6 +102,9 @@ using a trained match outcome model.
 ---
 
 ## 🎥 Demo & Screenshots
+
+Figures are generated from the analysis notebooks and exported automatically
+to `docs/images` to keep documentation synchronized with simulation outputs.
 
 ### Champion Probability Forecast
 
@@ -121,37 +134,26 @@ Results shown are produced from **large-scale tournament simulations (10,000–1
 
 ---
 
-# 🏗 System Architecture
+## 🏗 System Architecture
 
 The forecasting pipeline follows a modular architecture:
 
-historical match data\
-↓\
-feature engineering pipeline\
-↓\
-ML match outcome model\
-↓\
-predict_match(team_a, team_b)\
-↓\
-Monte Carlo tournament simulation\
-↓\
-N simulated tournaments\
-↓\
-probability aggregation\
-↓\
-forecast outputs
+```mermaid
+flowchart TD
+A[Historical Match Data] --> B[Feature Engineering] --> C[Match Outcome Model] --> D[predict_match(team_a, team_b)] --> E[Monte Carlo Tournament Simulation] --> F[N Simulated Tournaments] --> G[Probability Aggregation] --> H[Forecast Outputs]
+```
 
 The system separates **modeling, simulation, and reporting** components
 to maintain a clean and extensible architecture.
 
 ---
 
-# 🧩 Forecasting System Architecture
+## 🧩 Forecasting System Architecture
 
 The project is organized as a modular forecasting pipeline combining
 **data engineering, machine learning, and simulation components**.
 
-``` mermaid
+```mermaid
 flowchart TD
 A[Historical Match Data] --> B[Data Ingestion]
 B --> C[Feature Engineering]
@@ -171,15 +173,14 @@ M --> O
 N --> O
 O --> P[Streamlit Dashboard]
 ```
-
 The architecture follows a **production-style separation between data
 processing, predictive modeling, simulation, and reporting layers**.
 
 ---
 
-# ⚙ Tournament Simulation Flow
+## ⚙ Tournament Simulation Flow
 
-``` mermaid
+```mermaid
 flowchart TD
 A[Load Team Strength Snapshot] --> B[Initialize Tournament]
 B --> C[Simulate Group Matches]
@@ -197,10 +198,9 @@ L -->|No| M[Aggregate Tournament Statistics]
 M --> N[Team Advancement Probabilities]
 M --> O[Champion Probability Distribution]
 ```
-
 ---
 
-# 🧠 Component Responsibilities
+## 🧠 Component Responsibilities
 
 | Component | Responsibility |
 |---|---|
@@ -214,7 +214,7 @@ M --> O[Champion Probability Distribution]
 
 ---
 
-# ⚙ Simulation Engine Internals
+## ⚙ Simulation Engine Internals
 
 The tournament simulation engine is composed of several modules:
 
@@ -236,9 +236,19 @@ Key outputs include:
 -   simulated match logs
 -   simulation metadata
 
+## Core Simulation Components
+
+| Module | Description |
+|------|-------------|
+| `run_simulation.py` | Entry point for running tournament simulations |
+| `group_stage.py` | Group stage match simulation and standings |
+| `knockout_stage.py` | Knockout bracket simulation |
+| `aggregation.py` | Aggregation of Monte Carlo results |
+| `reporting.py` | Export of simulation artifacts |
+
 ---
 
-# 📊 Data Pipeline
+## 📊 Data Pipeline
 
 The system uses historical international football match data to
 construct **team strength features**.
@@ -272,7 +282,7 @@ This snapshot is used as the starting point for tournament simulation.
 
 ---
 
-# 🤖 Match Outcome Model
+## 🤖 Match Outcome Model
 
 The match prediction model estimates:
 
@@ -302,7 +312,7 @@ simulation engine.
 
 ---
 
-# 🎲 Tournament Simulation Engine
+## 🎲 Tournament Simulation Engine
 
 The tournament simulator transforms match probabilities into full
 tournament forecasts.
@@ -329,7 +339,7 @@ Each simulation generates:
 
 ---
 
-# 🏆 Monte Carlo Forecasting
+## 🏆 Monte Carlo Forecasting
 
 The engine runs thousands of simulated tournaments.
 
@@ -353,7 +363,7 @@ tournaments.
 
 ---
 
-# 📁 Project Structure
+## 📁 Project Structure
 
 ```bash
 world-cup-2026-forecast
@@ -401,7 +411,7 @@ world-cup-2026-forecast
 
 ---
 
-# ▶ Running the Simulation
+## ▶ Running the Simulation
 
 ### Classic Tournament (32 teams)
 
@@ -431,7 +441,7 @@ py -m src.simulation.run_simulation \
 | `--simulation-format` | `v1` (32 teams) or `v2` (48 teams) |
 
 
-# 📦 Simulation Outputs
+## 📦 Simulation Outputs
 
 Simulation artifacts are exported to:
 
@@ -444,11 +454,73 @@ Generated files:
 -   match_logs.parquet
 -   summary_metadata.json
 
+Example (team_probabilities.csv):
+
+| team | advance_from_group_prob | semifinal_prob | champion_prob |
+|-----|-----|-----|-----|
+| Spain | 0.888 | 0.430 | 0.231 |
+| Argentina | 0.885 | 0.412 | 0.208 |
+
 These artifacts are later consumed by the **Streamlit dashboard**.
 
 ---
 
-# 📈 Dashboard
+## � Docs & Reproducibility
+
+### 📚 Technical Documentation
+
+Detailed technical documentation is available in the `docs/` directory:
+
+- Architecture overview → `docs/architecture.md`
+- Engineering decisions → `docs/engineering.md`
+- Modeling approach → `docs/modeling.md`
+- Project roadmap → `docs/project_status.md`
+
+---
+
+### 🔁 Reproducibility
+
+All simulation artifacts can be reproduced by running the simulation engine
+with the provided configuration files.
+
+Notebooks in `notebooks/` and `experiments/` allow exploration and validation
+of the modeling and simulation pipeline.
+
+---
+
+### 📓 Research and Analytical Notebooks
+
+The repository includes several notebooks used during the development and analysis of the forecasting framework.
+
+These notebooks are intended for **exploration, validation, and communication of results** and are not part of the production pipeline.
+
+#### Research Experiments
+
+Research-oriented experiments are stored in the `experiments/` directory.
+
+| Notebook | Purpose |
+|--------|--------|
+| `01_match_model_experiments.ipynb` | Exploratory experimentation with match outcome models and feature configurations |
+
+These notebooks were used to test modeling ideas before integrating finalized approaches into the production codebase.
+
+---
+
+#### Analytical Notebooks
+
+The `notebooks/` directory contains analysis and storytelling notebooks built on top of the production simulation pipeline.
+
+| Notebook | Purpose |
+|--------|--------|
+| `00_eda_match_dataset.ipynb` | Exploratory analysis of the historical football match dataset |
+| `02_simulation_analysis.ipynb` | Analysis of Monte Carlo simulation outputs and team progression probabilities |
+| `03_world_cup_forecast_story.ipynb` | Narrative forecast of the FIFA World Cup 2026 highlighting contenders and tournament uncertainty |
+
+These notebooks help interpret the model outputs and provide transparency into how tournament forecasts are generated.
+
+---
+
+## 📈 Dashboard
 
 A Streamlit dashboard allows interactive exploration of forecast
 results.
@@ -468,12 +540,14 @@ The dashboard provides:
 -   simulation match logs
 
 ----
+
 ## 📓 Research and Analytical Notebooks
 
-The repository includes several notebooks used during the development and analysis of the forecasting framework.  
+The repository includes several notebooks used during the development and analysis of the forecasting framework.
+
 These notebooks are intended for **exploration, validation, and communication of results** and are not part of the production pipeline.
 
-### Research Experiments
+## Research Experiments
 
 Research-oriented experiments are stored in the `experiments/` directory.
 
@@ -485,7 +559,7 @@ These notebooks were used to test modeling ideas before integrating finalized ap
 
 ---
 
-### Analytical Notebooks
+## Analytical Notebooks
 
 The `notebooks/` directory contains analysis and storytelling notebooks built on top of the production simulation pipeline.
 
@@ -499,7 +573,7 @@ These notebooks help interpret the model outputs and provide transparency into h
 
 ---
 
-### Relationship to the Production Pipeline
+## Relationship to the Production Pipeline
 
 The repository separates **research, analysis, and production code**:
 
@@ -513,7 +587,7 @@ This separation ensures that the production system remains stable while allowing
 
 ---
 
-# ⚠ Current Limitations
+## ⚠ Current Limitations
 
 This version simplifies several aspects of real tournaments.
 
@@ -543,7 +617,7 @@ The .env file is ignored by git and should not be committed to the repository.
 
 ---
 
-# 🚀 Future Improvements
+## 🚀 Future Improvements
 
 Potential extensions include:
 
@@ -555,7 +629,11 @@ Potential extensions include:
 
 ---
 
-# 🎯 Why This Project
+## 🎯 Why This Project
+
+This project was designed as a **production-style sports analytics system**
+that mirrors how forecasting pipelines are implemented in professional
+analytics teams.
 
 This project demonstrates the ability to build **end-to-end sports
 analytics systems**, including:
@@ -586,7 +664,7 @@ These techniques are directly applicable to:
 
 ---
 
-# 👤 Author
+## 👤 Author
 
 Manuel Pérez Bañuls\
 Data Scientist focused on **football analytics, predictive modeling, and
@@ -594,6 +672,6 @@ performance analysis**.
 
 ---
 
-# 📜 License
+## 📜 License
 
 MIT License
