@@ -115,6 +115,15 @@ def build_preprocessor() -> ColumnTransformer:
 
     return preprocessor
 
+# ------------------------------------------------------------------
+# Model Definitions
+# ------------------------------------------------------------------
+# Logistic Regression is the production model used by the simulation engine.
+# The calibrated version is included only for benchmarking purposes.
+# Benchmark results are documented in:
+# experiments/05_match_model_benchmark.ipynb
+# docs/modeling.md
+# ------------------------------------------------------------------
 
 def build_models(preprocessor: ColumnTransformer) -> Dict[str, Any]:
     """Build candidate ML pipelines."""
