@@ -1,6 +1,6 @@
 # ⚽ World Cup 2026 Forecasting Engine
 
-## Probabilistic Tournament Simulation with Machine Learning
+## Building end-to-end decision systems for football: from data to actionable insights under real-world constraints.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![License:
