@@ -25,7 +25,7 @@ Outputs include:
 The architecture is modular and designed to resemble a simplified
 production forecasting system.
 
-------------------------------------------------------------------------
+---
 
 ## Engineering Scope
 
@@ -60,7 +60,7 @@ src/
 
 The simulation layer contains most of the engineering logic.
 
-------------------------------------------------------------------------
+---
 
 # Simulation Engine
 
@@ -84,7 +84,7 @@ py -m src.simulation.run_simulation \
 --num-workers 4
 ```
 
-------------------------------------------------------------------------
+---
 
 # Module Responsibilities
 
@@ -101,7 +101,7 @@ Each group produces:
 
 GroupTable QualifiedTeams MatchSimulationResults
 
-------------------------------------------------------------------------
+---
 
 ## `knockout_stage.py`
 
@@ -125,7 +125,7 @@ Draw resolution methods include:
 
 coin_flip elo_weighted
 
-------------------------------------------------------------------------
+---
 
 ## `tournament.py`
 
@@ -142,7 +142,7 @@ simulate_many_tournaments()
 
 which performs repeated simulations using a shared predictor instance.
 
-------------------------------------------------------------------------
+---
 
 ## `aggregation.py`
 
@@ -159,7 +159,7 @@ Example:
 
 P(team reaches semifinal) = mean(semifinal_flag)
 
-------------------------------------------------------------------------
+---
 
 ## `reporting.py`
 
@@ -181,7 +181,7 @@ These files serve as inputs for:
 -   external analysis
 -   reporting pipelines
 
-------------------------------------------------------------------------
+---
 
 # Parallel Simulation
 
@@ -205,7 +205,7 @@ Example scale:
 
 depending on hardware.
 
-------------------------------------------------------------------------
+---
 
 # Reproducibility
 
@@ -216,7 +216,7 @@ SimulationConfig.random_seed
 This guarantees reproducibility across runs when configuration is
 unchanged.
 
-------------------------------------------------------------------------
+---
 
 # Output Data Model
 
@@ -229,7 +229,7 @@ quarterfinalists semifinalists finalists champion match_results metadata
 
 Aggregation modules operate directly on this object.
 
-------------------------------------------------------------------------
+---
 
 # Visualization Layer
 
@@ -245,7 +245,7 @@ The dashboard reads exported artifacts and presents:
 
 This layer is intentionally decoupled from the simulation engine.
 
-------------------------------------------------------------------------
+---
 
 # Current Limitations
 
@@ -259,7 +259,36 @@ The real 2026 World Cup format will include:
 
 Future work will extend the bracket generator to support this structure.
 
-------------------------------------------------------------------------
+---
+
+# Knockout Bracket Design (48-team format)
+
+The FIFA 2026 format introduces a complex mapping between group-stage results
+and knockout bracket positions due to the qualification of best third-placed teams.
+
+Instead of implementing the full combinatorial mapping (495 possible scenarios),
+this project adopts a deterministic and balanced approximation.
+
+## Design Decisions
+
+- Avoid winner-vs-winner matchups in the Round of 32
+- Ensure group winners have a structural advantage
+- Maintain reproducibility across simulations
+- Keep bracket logic interpretable and maintainable
+
+## Trade-offs
+
+| Aspect | Approach |
+|------|--------|
+| Realism | Approximate (not full FIFA mapping) |
+| Complexity | Reduced |
+| Maintainability | High |
+| Reproducibility | Deterministic |
+
+This decision prioritizes clarity and robustness over full regulatory fidelity,
+which is appropriate for a probabilistic forecasting system.
+
+---
 
 # Future Engineering Improvements
 
@@ -272,7 +301,7 @@ Potential upgrades include:
 -   live tournament updates
 -   API layer for real-time queries
 
-------------------------------------------------------------------------
+---
 
 # Summary
 

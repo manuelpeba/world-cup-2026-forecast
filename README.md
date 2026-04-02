@@ -239,7 +239,7 @@ Key features include:
 
 | Feature Type | Examples |
 |---|---|
-| Rating metrics | Elo rating, Elo difference |
+| Rating metrics | Dynamic Elo rating system computed from historical matches |
 | Performance metrics | Rolling goals scored/conceded |
 | Form metrics | Rolling win rate |
 
@@ -328,6 +328,41 @@ Each run produces:
 -   knockout progression
 -   finalists
 -   champion
+
+## Knockout Bracket Design (48-team format)
+
+The 2026 World Cup format (48 teams, 12 groups) introduces a non-trivial
+knockout structure due to the inclusion of best third-placed teams.
+
+This project implements a **deterministic and balanced approximation**
+of the official FIFA bracket:
+
+- 8 group winners face the 8 best third-placed teams
+- 4 group winners face 4 runners-up
+- Remaining runners-up play against each other
+- Winner-vs-winner matchups are avoided in the Round of 32
+
+This design ensures:
+
+- Competitive fairness (top teams are not eliminated early)
+- Structural consistency across simulations
+- Reproducibility of results
+
+## Third-Place Team Assignment
+
+Instead of enumerating all possible FIFA combinations (495 scenarios),
+the system uses a **deterministic simplified mapping strategy**.
+
+When required, third-placed teams are assigned to knockout slots using
+a consistent fallback rule based on ranking and group identifiers.
+
+This trade-off prioritizes:
+
+- Simulation stability
+- Code simplicity
+- Portfolio clarity
+
+over exact replication of FIFA’s full mapping table.
 
 ---
 
@@ -562,6 +597,7 @@ A: Ensure:
 | Tie-breakers | Simplified group ranking |
 | Knockout resolution | Simplified logic |
 | Team strength | Static ratings during tournament |
+| Knockout bracket (48 teams) | Uses a deterministic approximation instead of full FIFA mapping (495 combinations) |
 
 ---
 
@@ -654,8 +690,6 @@ Specializing in:
 
 **Connect & Collaborate**:
 - 📧 Email: [manuelpeba@gmail.com](mailto:manuelpeba@gmail.com)
-- 💼 LinkedIn: [manuel-perez-banuls](https://www.linkedin.com/in/manuel-perez-banuls/)
-- 🐙 GitHub: [manuelpeba](https://github.com/manuelpeba)
 
 Interested in discussing sports analytics, forecasting systems, or data-driven decision-making? Feel free to reach out!
 

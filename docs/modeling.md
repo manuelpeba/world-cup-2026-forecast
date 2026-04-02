@@ -362,6 +362,21 @@ alternatives.
 
 ---
 
+## Feature Design: Team Strength
+
+Team strength is modeled using a combination of:
+
+- Dynamic Elo ratings computed from historical matches
+- Rolling performance metrics (goals scored, conceded, win rate)
+
+Elo serves as the primary long-term strength signal, while rolling metrics
+capture short-term form.
+
+This combination allows the model to balance structural team quality with
+recent performance trends.
+
+---
+
 ## Role of the Benchmark Experiment
 
 The benchmark notebook:
