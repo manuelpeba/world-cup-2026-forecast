@@ -1,33 +1,38 @@
 team,titles,champion_prob
-Spain,23125,0.2312
-Argentina,20819,0.2082
-Colombia,8909,0.0891
-France,6922,0.0692
-England,6865,0.0686
-Portugal,4850,0.0485
-Brazil,4654,0.0465
-Netherlands,4646,0.0465
-Senegal,3520,0.0352
-Ecuador,2806,0.0281
-Uruguay,2238,0.0224
-Italy,1836,0.0184
-Croatia,1768,0.0177
-Germany,1746,0.0175
-Switzerland,1484,0.0148
-Morocco,737,0.0074
-Belgium,720,0.0072
-Denmark,576,0.0058
-Japan,439,0.0044
-Turkey,224,0.0022
-Iran,211,0.0021
-Canada,206,0.0021
-South Korea,138,0.0014
-Nigeria,130,0.0013
-Mexico,113,0.0011
-Australia,101,0.001
-Chile,60,0.0006
-Peru,58,0.0006
-Serbia,43,0.0004
-Cameroon,27,0.0003
-Poland,22,0.0002
-United States,7,0.0001
+Spain,2743,0.2743
+Argentina,1643,0.1643
+England,952,0.0952
+France,914,0.0914
+Brazil,567,0.0567
+Netherlands,471,0.0471
+Colombia,404,0.0404
+Portugal,324,0.0324
+Ecuador,238,0.0238
+Morocco,228,0.0228
+Switzerland,207,0.0207
+Uruguay,191,0.0191
+Germany,187,0.0187
+Croatia,175,0.0175
+Senegal,151,0.0151
+Japan,138,0.0138
+Belgium,119,0.0119
+South Korea,69,0.0069
+Norway,59,0.0059
+Canada,32,0.0032
+Mexico,32,0.0032
+Austria,28,0.0028
+Iran,21,0.0021
+Turkey,19,0.0019
+Australia,19,0.0019
+Paraguay,16,0.0016
+Algeria,15,0.0015
+United States,12,0.0012
+Ivory Coast,8,0.0008
+Uzbekistan,4,0.0004
+Egypt,4,0.0004
+Scotland,3,0.0003
+Tunisia,2,0.0002
+Czech Republic,2,0.0002
+Sweden,1,0.0001
+New Zealand,1,0.0001
+Panama,1,0.0001

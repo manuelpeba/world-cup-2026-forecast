@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
+from src.utils.helpers import normalize_team_name
 from src.utils.config import PROCESSED_DATA_DIR
 
 
@@ -18,63 +21,76 @@ def load_filtered_matches() -> pd.DataFrame:
 def load_elo_ratings() -> pd.DataFrame:
     """
     Load team-level Elo ratings dataset.
+
+    Priority:
+    1. data/processed/elo_features.parquet
+    2. data/processed/team_elo_ratings.parquet
+
+    Expected minimum columns:
+    - team
+    - date
+    - either:
+        * elo_before
+      or
+        * elo
     """
-    file_path = PROCESSED_DATA_DIR / "team_elo_ratings.parquet"
-    df = pd.read_parquet(file_path)
-    df["date"] = pd.to_datetime(df["date"])
-    return df
+    preferred_path = PROCESSED_DATA_DIR / "elo_features.parquet"
+    fallback_path = PROCESSED_DATA_DIR / "team_elo_ratings.parquet"
 
-
-def add_match_key(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Create a robust team-match key using the same logic as match_features.py.
-    """
-    df = df.copy()
-
-    required_cols = [
-        "date",
-        "team",
-        "opponent",
-        "tournament",
-        "goals_for",
-        "goals_against",
-        "neutral_venue",
-    ]
-
-    missing_cols = [col for col in required_cols if col not in df.columns]
-    if missing_cols:
-        raise KeyError(
-            f"Cannot build match_key. Missing columns: {missing_cols}"
+    if preferred_path.exists():
+        file_path = preferred_path
+    elif fallback_path.exists():
+        file_path = fallback_path
+    else:
+        raise FileNotFoundError(
+            "No Elo dataset found. Expected one of:\n"
+            f"- {preferred_path}\n"
+            f"- {fallback_path}"
         )
 
-    df["match_key"] = (
-        df["date"].astype(str)
-        + "|"
-        + df["team"].astype(str)
-        + "|"
-        + df["opponent"].astype(str)
-        + "|"
-        + df["tournament"].astype(str)
-        + "|"
-        + df["goals_for"].astype(str)
-        + "|"
-        + df["goals_against"].astype(str)
-        + "|"
-        + df["neutral_venue"].astype(str)
-    )
+    df = pd.read_parquet(file_path)
+    df["date"] = pd.to_datetime(df["date"])
+
+    if "team" not in df.columns:
+        raise KeyError(f"'team' column not found in Elo dataset: {file_path}")
+
+    if "date" not in df.columns:
+        raise KeyError(f"'date' column not found in Elo dataset: {file_path}")
+
+    # Normalize Elo column name
+    if "elo_before" in df.columns:
+        elo_col = "elo_before"
+    elif "elo" in df.columns:
+        elo_col = "elo"
+    else:
+        raise KeyError(
+            f"Elo dataset {file_path} must contain either 'elo_before' or 'elo'."
+        )
+
+    df = df.loc[:, ["team", "date", elo_col]].copy()
+    df = df.rename(columns={elo_col: "elo_before"})
 
     return df
 
 
-def deduplicate_match_keys(df: pd.DataFrame, name: str) -> pd.DataFrame:
+def deduplicate_team_date_rows(df: pd.DataFrame, name: str) -> pd.DataFrame:
     """
-    Drop exact duplicate rows based on match_key.
+    Drop exact duplicate rows based on (team, date, elo_before) or (team, date)
+    and keep the last available value per team-date.
+
+    This is useful before merge_asof because duplicate keys can create ambiguity.
     """
     before = len(df)
-    dup_count = df["match_key"].duplicated().sum()
-    print(f"{name} duplicated match_key rows: {dup_count:,}")
 
-    df = df.drop_duplicates(subset=["match_key"]).copy()
+    if "elo_before" in df.columns:
+        df = df.sort_values(["team", "date", "elo_before"]).copy()
+    else:
+        df = df.sort_values(["team", "date"]).copy()
+
+    dup_count = df.duplicated(subset=["team", "date"]).sum()
+    print(f"{name} duplicated (team, date) rows: {dup_count:,}")
+
+    df = df.drop_duplicates(subset=["team", "date"], keep="last").copy()
     after = len(df)
 
     if before != after:
@@ -86,50 +102,108 @@ def deduplicate_match_keys(df: pd.DataFrame, name: str) -> pd.DataFrame:
 def merge_features_with_elo(
     matches_df: pd.DataFrame,
     elo_df: pd.DataFrame,
+    fallback_elo: float = 1500.0,
 ) -> pd.DataFrame:
     """
-    Merge filtered team rolling features with Elo ratings using robust match_key.
+    Merge filtered team rolling features with Elo ratings using a temporal join.
+
+    Strategy:
+    - For each team and match date, attach the most recent available Elo rating
+      on or before that date.
+    - Uses merge_asof per team to avoid brittle exact match_key joins.
+
+    Requirements:
+    matches_df must contain:
+    - team
+    - date
+    - rolling_goals_scored
+    - rolling_goals_conceded
+    - rolling_goal_diff
+    - rolling_win_rate
+    - rolling_points
+
+    elo_df must contain:
+    - team
+    - date
+    - elo_before
     """
-    matches_df = add_match_key(matches_df)
-    elo_df = add_match_key(elo_df)
-
-    matches_df = deduplicate_match_keys(matches_df, "matches_df")
-    elo_df = deduplicate_match_keys(elo_df, "elo_df")
-
-    feature_cols = [
-        "match_key",
-        "date",
+    required_match_cols = [
         "team",
+        "date",
         "rolling_goals_scored",
         "rolling_goals_conceded",
         "rolling_goal_diff",
         "rolling_win_rate",
         "rolling_points",
     ]
-
-    elo_cols = [
-        "match_key",
-        "elo_before",
-    ]
-
-    missing_feature_cols = [col for col in feature_cols if col not in matches_df.columns]
-    if missing_feature_cols:
+    missing_match_cols = [col for col in required_match_cols if col not in matches_df.columns]
+    if missing_match_cols:
         raise KeyError(
-            f"Missing feature columns in matches_filtered.parquet: {missing_feature_cols}"
+            f"Missing required columns in matches_filtered.parquet: {missing_match_cols}"
         )
 
-    missing_elo_cols = [col for col in elo_cols if col not in elo_df.columns]
+    required_elo_cols = ["team", "date", "elo_before"]
+    missing_elo_cols = [col for col in required_elo_cols if col not in elo_df.columns]
     if missing_elo_cols:
         raise KeyError(
-            f"Missing Elo columns in team_elo_ratings.parquet: {missing_elo_cols}"
+            f"Missing required columns in Elo dataset: {missing_elo_cols}"
         )
 
-    merged = matches_df[feature_cols].merge(
-        elo_df[elo_cols],
-        on="match_key",
-        how="inner",
-        validate="one_to_one",
+    matches_df = matches_df.copy()
+    matches_df["team"] = matches_df["team"].apply(normalize_team_name)
+    elo_df = elo_df.copy()
+    elo_df["team"] = elo_df["team"].apply(normalize_team_name)
+
+    matches_df["date"] = pd.to_datetime(matches_df["date"])
+    elo_df["date"] = pd.to_datetime(elo_df["date"])
+
+    matches_df = matches_df.sort_values(["team", "date"]).reset_index(drop=True)
+    elo_df = elo_df.sort_values(["team", "date"]).reset_index(drop=True)
+
+    elo_df = deduplicate_team_date_rows(elo_df, "elo_df")
+
+    merged_parts: list[pd.DataFrame] = []
+
+    match_teams = sorted(matches_df["team"].dropna().unique())
+
+    for team in match_teams:
+        team_matches = matches_df.loc[matches_df["team"] == team].copy()
+        team_elo = elo_df.loc[elo_df["team"] == team, ["date", "elo_before"]].copy()
+
+        team_matches = team_matches.sort_values("date")
+        team_elo = team_elo.sort_values(by="date") # type: ignore
+
+        if team_elo.empty:
+            team_matches["elo_before"] = pd.NA
+            merged_parts.append(team_matches)
+            continue
+
+        merged_team = pd.merge_asof(
+            team_matches,
+            team_elo,
+            on="date",
+            direction="backward",
+        )
+
+        merged_parts.append(merged_team)
+
+    merged = pd.concat(merged_parts, axis=0, ignore_index=True)
+    merged = merged.sort_values(["team", "date"]).reset_index(drop=True)
+
+    missing_elo_teams = (
+        merged.loc[merged["elo_before"].isna(), "team"]
+        .dropna()
+        .unique()
+        .tolist()
     )
+
+    if missing_elo_teams:
+        print(
+            "Teams without Elo found after merge. "
+            f"Falling back to {fallback_elo:.1f} for: {sorted(missing_elo_teams)}"
+        )
+
+    merged["elo_before"] = merged["elo_before"].fillna(fallback_elo)
 
     return merged
 
@@ -138,6 +212,22 @@ def extract_latest_team_state(df: pd.DataFrame) -> pd.DataFrame:
     """
     Keep the most recent available row for each national team.
     """
+    required_cols = [
+        "team",
+        "date",
+        "elo_before",
+        "rolling_goals_scored",
+        "rolling_goals_conceded",
+        "rolling_goal_diff",
+        "rolling_win_rate",
+        "rolling_points",
+    ]
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        raise KeyError(
+            f"Missing required columns before extracting latest team state: {missing_cols}"
+        )
+
     df = df.sort_values(["team", "date"]).copy()
 
     latest_df = (
@@ -147,18 +237,7 @@ def extract_latest_team_state(df: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
     )
 
-    selected_cols = [
-        "team",
-        "date",
-        "elo_before",
-        "rolling_goals_scored",
-        "rolling_goals_conceded",
-        "rolling_goal_diff",
-        "rolling_win_rate",
-        "rolling_points",
-    ]
-
-    latest_df = latest_df[selected_cols].copy()
+    latest_df = latest_df[required_cols].copy()
 
     return latest_df
 

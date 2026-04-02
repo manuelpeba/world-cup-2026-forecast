@@ -4,9 +4,11 @@
   "model_name": "logistic_regression",
   "neutral_venue": 1,
   "knockout_draw_resolution": "elo_weighted",
-  "num_groups": 8,
+  "num_groups": 12,
   "group_size": 4,
   "teams_advancing_per_group": 2,
-  "num_simulations": 100000,
-  "num_teams": 32
+  "best_third_qualifiers": 8,
+  "initial_knockout_round": "round_of_32",
+  "num_simulations": 10000,
+  "num_teams": 48
 }
